@@ -1,0 +1,197 @@
+{
+  "name": "AI Insurance Assistant - Intake to Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "insurance/intake",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "id": "Webhook_Intake",
+      "name": "Webhook Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\nreturn [{json: {\n  input: b.input || b,\n  generate_presentation: b.generate_presentation ?? true,\n  generate_content: b.generate_content ?? true\n}}];"
+      },
+      "id": "Normalize_Request",
+      "name": "Normalize Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_BASE_URL}}/api/cases/intake",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "Call_MAIN_API",
+      "name": "Call MAIN API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.case.compliance_notes.length > 0}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "Compliance_Check",
+      "name": "Compliance Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [980, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {\n  case_id: $json.case.case_id,\n  approved: false,\n  reviewer: 'compliance-bot',\n  reason: `Auto hold: ${$json.case.compliance_notes.join('; ')}`\n}}];"
+      },
+      "id": "Prepare_Rejection",
+      "name": "Prepare Rejection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1210, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {\n  case_id: $json.case.case_id,\n  approved: true,\n  reviewer: 'compliance-bot',\n  reason: 'Auto-approved: no compliance flags'\n}}];"
+      },
+      "id": "Prepare_Approval",
+      "name": "Prepare Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1210, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_BASE_URL}}/api/cases/{{$json.case_id}}/review",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { approved: $json.approved, reviewer: $json.reviewer, reason: $json.reason } }}"
+      },
+      "id": "Submit_Review",
+      "name": "Submit Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "Webhook_Response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [1690, 220]
+    }
+  ],
+  "connections": {
+    "Webhook Intake": {
+      "main": [
+        [
+          {
+            "node": "Normalize Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Request": {
+      "main": [
+        [
+          {
+            "node": "Call MAIN API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call MAIN API": {
+      "main": [
+        [
+          {
+            "node": "Compliance Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compliance Check": {
+      "main": [
+        [
+          {
+            "node": "Prepare Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Rejection": {
+      "main": [
+        [
+          {
+            "node": "Submit Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Approval": {
+      "main": [
+        [
+          {
+            "node": "Submit Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Review": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

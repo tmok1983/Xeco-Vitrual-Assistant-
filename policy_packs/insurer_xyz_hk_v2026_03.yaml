@@ -1,0 +1,95 @@
+company_id: insurer_xyz
+company_name: XYZ Insurance
+jurisdiction: HK
+language: zh-HK
+version: 2026-03
+effective_from: 2026-03-01
+status: active
+
+branding:
+  advisor_brand_name: ET Consulting
+  primary_color: "#B45309"
+  secondary_color: "#7C5B3A"
+  presentation_theme: proposal_v1
+
+analysis:
+  allowed_output_style:
+    - objective
+    - advisory
+    - traditional_chinese
+  required_sections:
+    - technical_summary
+    - advisor_narrative
+    - recommendations
+  banned_phrases:
+    - 保證回報
+    - 零風險
+    - 必定批核
+    - 絕對保障
+  preferred_terms:
+    life: 壽險保障
+    ci: 重大疾病保障
+    medical: 醫療保障
+    accident: 意外保障
+
+compliance:
+  risk_thresholds:
+    low_max: 29
+    medium_max: 69
+    high_max: 100
+  banned_claims:
+    - phrase: 保證
+      severity: high
+      reason: 不可作出保證性陳述
+    - phrase: 100%
+      severity: high
+      reason: 不可使用絕對化表述
+  required_disclosures:
+    - 本建議僅供保障規劃參考，非投資或法律意見。
+    - 實際保障內容與理賠條件以保單條款及核保結果為準。
+  approval_rules:
+    low: auto_approve
+    medium: approve_with_disclosure
+    high: manual_review
+
+presentation:
+  required_slides:
+    - cover
+    - profile_summary
+    - coverage_review
+    - risk_analysis
+    - family_gap
+    - strategy
+    - budget
+    - advisor_summary
+    - action_plan
+    - faq
+    - compliance
+  mandatory_footer: ET Consulting | Insurance Advisory Proposal
+  icon_style: standard
+  max_bullets_per_slide: 4
+  max_chars_per_bullet: 54
+
+retrieval:
+  collections:
+    - xyz_hk_compliance_manual
+    - xyz_hk_product_guidelines
+    - xyz_hk_approved_scripts
+  doc_priority:
+    - compliance_manual
+    - approved_script
+    - product_guide
+  filters:
+    jurisdiction: HK
+    language: zh-HK
+    status: active
+
+prompts:
+  analysis_prompt_id: analysis_xyz_hk_v1
+  compliance_prompt_id: compliance_xyz_hk_v1
+  presentation_prompt_id: presentation_xyz_hk_v1
+
+audit:
+  retain_prompt_id: true
+  retain_sources: true
+  retain_policy_version: true

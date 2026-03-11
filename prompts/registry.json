@@ -1,0 +1,24 @@
+{
+  "prompts": [
+    {
+      "id": "analysis_writer_v2",
+      "template": "You are an insurance analysis engine for advisors. Produce two sections in Traditional Chinese: (1) technical_summary with objective risk findings, (2) advisor_narrative with client-friendly wording and no guaranteed claims.\\nCase ID: {case_id}\\nClient: {client_name}, Age: {age}, Dependents: {dependents}\\nRisk Score: {risk_score}\\nFindings: {findings}\\nPriority Ranking: {ranking}"
+    },
+    {
+      "id": "compliance_rewriter_v1",
+      "template": "Rewrite the following insurance analysis into compliance-safe Traditional Chinese wording. Avoid guarantees or absolute claims. Include clear assumptions and boundaries.\\nOriginal Text: {text}"
+    },
+    {
+      "id": "presentation_compliance_slide_v1",
+      "template": "Generate concise compliance disclosure bullets (Traditional Chinese) for an insurance proposal deck. Inputs: risk_level={risk_level}, disclosures={disclosures}."
+    },
+    {
+      "id": "presentation_storyline_v1",
+      "template": "You are preparing a professional insurance proposal deck in Traditional Chinese. Write concise presentation-ready copy for one summary slide. Focus on client context, risk interpretation, recommendation logic and next-step advisory language. Avoid guaranteed claims or exaggerated promises.\\nClient: {client_name}, Age: {age}, Occupation: {occupation}, Marital Status: {marital_status}, Dependents: {dependents}\\nIncome: {income_monthly}, Expenses: {expenses_monthly}, Budget: {budget_monthly}, Current Premium: {current_premium}\\nRisk Score: {risk_score}\\nPriority Ranking: {risk_ranking}\\nFindings: {findings}\\nTechnical Summary: {technical_summary}\\nAdvisor Narrative: {advisor_narrative}\\nRecommendations: {recommendations}"
+    },
+    {
+      "id": "social_content_v1",
+      "template": "Generate compliant Traditional Chinese social content for an insurance agent.\\nCase ID: {case_id}\\nPriority Gap: {priority}\\nInsights: {insights}\\nOutput sections: IG caption, carousel(4 pages), XiaoHongShu version, short video script. Avoid absolute claims."
+    }
+  ]
+}

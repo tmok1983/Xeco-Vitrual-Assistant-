@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-insurance-assistant"
+version = "0.2.0"
+description = "MVP AI Insurance Sales Assistant based on n8n workflow SRD"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "pydantic>=2.8.0",
+  "psycopg[binary]>=3.2.0",
+  "PyYAML>=6.0.0",
+  "certifi>=2025.0.0",
+  "reportlab>=4.2.0",
+  "google-api-python-client>=2.170.0",
+  "google-auth>=2.40.0",
+  "google-auth-oauthlib>=1.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "httpx>=0.27.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.setuptools]
+packages = ["app"]

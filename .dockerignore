@@ -1,0 +1,10 @@
+.git
+.venv
+.pytest_cache
+__pycache__
+*.pyc
+.env
+.env.*
+ai_insurance_assistant.egg-info
+tests
+n8n
