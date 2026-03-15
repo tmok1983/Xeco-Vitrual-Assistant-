@@ -1,0 +1,60 @@
+{
+  "faqs": [
+    {
+      "doc_id": "faq-en-start-charge",
+      "language": "en-US",
+      "question": "How do I start charging?",
+      "answer": "To start charging: 1. Park safely and turn off the vehicle. 2. Open the app or scan the QR code. 3. Select the charger. 4. Plug in firmly. 5. Confirm start charging.",
+      "tags": ["start", "charging", "qr", "app", "connector"]
+    },
+    {
+      "doc_id": "faq-en-payment-failed",
+      "language": "en-US",
+      "question": "I was charged but charging did not start.",
+      "answer": "Please share the station ID, incident time, and the last 4 digits of the payment reference so support can investigate a failed charge or refund request.",
+      "tags": ["refund", "payment", "charged", "billing", "failed"]
+    },
+    {
+      "doc_id": "faq-en-station-offline",
+      "language": "en-US",
+      "question": "The station is offline.",
+      "answer": "If the station shows offline, try another connector or select a nearby station in the app.",
+      "tags": ["station", "offline", "outage", "unavailable"]
+    },
+    {
+      "doc_id": "faq-en-connector-issue",
+      "language": "en-US",
+      "question": "The connector is plugged in but charging does not start.",
+      "answer": "Check that the car is ready to charge, the connector is fully inserted, and the vehicle settings are not blocking charging.",
+      "tags": ["connector", "plugged", "charging", "does not start"]
+    },
+    {
+      "doc_id": "faq-th-start-charge",
+      "language": "th-TH",
+      "question": "เริ่มชาร์จอย่างไร",
+      "answer": "วิธีเริ่มชาร์จ: 1. จอดรถและดับเครื่อง 2. เปิดแอปหรือสแกน QR 3. เลือกหัวชาร์จ 4. เสียบหัวชาร์จให้แน่น 5. กดยืนยันเริ่มชาร์จ",
+      "tags": ["เริ่มชาร์จ", "qr", "แอป", "หัวชาร์จ"]
+    },
+    {
+      "doc_id": "faq-th-payment-failed",
+      "language": "th-TH",
+      "question": "ถูกตัดเงินแต่ชาร์จไม่สำเร็จ",
+      "answer": "กรุณาแจ้งหมายเลขสถานี เวลาเกิดเหตุ และ 4 หลักท้ายของรายการชำระเงิน เพื่อให้ทีมงานตรวจสอบการคืนเงินหรือรายการผิดปกติ",
+      "tags": ["คืนเงิน", "ชำระเงิน", "ตัดเงิน", "ชาร์จไม่สำเร็จ"]
+    },
+    {
+      "doc_id": "faq-th-station-offline",
+      "language": "th-TH",
+      "question": "สถานีออฟไลน์หรือใช้งานไม่ได้",
+      "answer": "หากสถานีขึ้นออฟไลน์ แนะนำให้ลองเปลี่ยนหัวชาร์จหรือเลือกสถานีใกล้เคียงในแอป",
+      "tags": ["ออฟไลน์", "สถานีเสีย", "ใช้ไม่ได้"]
+    },
+    {
+      "doc_id": "faq-th-emergency",
+      "language": "th-TH",
+      "question": "มีควันหรือกลิ่นไหม้",
+      "answer": "หากมีกลิ่นไหม้ ควัน หรืออุปกรณ์ร้อนผิดปกติ ให้หยุดใช้งานทันที ออกจากพื้นที่อย่างปลอดภัย และติดต่อเจ้าหน้าที่",
+      "tags": ["ควัน", "ไหม้", "ฉุกเฉิน", "ความปลอดภัย"]
+    }
+  ]
+}

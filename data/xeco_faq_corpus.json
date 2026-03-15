@@ -1,0 +1,1532 @@
+{
+  "faqs": [
+    {
+      "doc_id": "faq-001-account-create-failed-en",
+      "language": "en-US",
+      "question": "Why can’t I create a new account?",
+      "answer": "Please ensure the account name contains no spaces.\nThe password must be at least 8 characters and include uppercase letters, lowercase letters, and numbers (no spaces or symbols).\nIf verification codes are requested too frequently, the system may temporarily block requests. Please wait 5 minutes and try again.\nRegistration tutorial video: https://bit.ly/4r91OXo",
+      "tags": [
+        "account",
+        "create",
+        "failed",
+        "帳戶",
+        "why",
+        "can",
+        "new",
+        "please",
+        "ensure",
+        "the",
+        "name",
+        "contains"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "account_create_failed"
+    },
+    {
+      "doc_id": "faq-001-account-create-failed-zh",
+      "language": "zh-HK",
+      "question": "開唔到新帳戶點算？",
+      "answer": "請確認帳戶名稱沒有空格。\n密碼需最少 8 位，並包含大寫及小寫英文字母和數字（不可有空格或符號）。\n如短時間內多次索取驗證碼，系統可能會暫時限制，請等 5 分鐘再試。\n新帳戶註冊流程影片：https://bit.ly/4r91OXo",
+      "tags": [
+        "account",
+        "create",
+        "failed",
+        "帳戶",
+        "開唔到新帳戶點算",
+        "請確認帳戶名稱沒有空格",
+        "密碼需最少",
+        "位",
+        "並包含大寫及小寫英文字母和數字",
+        "不可有空格或符號",
+        "如短時間內多次索取驗證碼",
+        "系統可能會暫時限制"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "account_create_failed"
+    },
+    {
+      "doc_id": "faq-001-account-create-failed-th",
+      "language": "th-TH",
+      "question": "ทำไมฉันจึงสร้างบัญชีใหม่ไม่ได้",
+      "answer": "โปรดตรวจสอบว่าชื่อบัญชีไม่มีเว้นวรรค\nรหัสผ่านต้องอย่างน้อย 8 ตัวอักษร และมีตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข (ห้ามมีช่องว่างหรือสัญลักษณ์)\nหากขอรหัสยืนยันบ่อยเกินไป ระบบอาจจำกัดการขอชั่วคราว โปรดรอ 5 นาทีแล้วลองใหม่\nวิดีโอสอนการลงทะเบียน: https://bit.ly/4r91OXo",
+      "tags": [
+        "account",
+        "create",
+        "failed",
+        "帳戶",
+        "ทำไมฉันจึงสร้างบัญชีใหม่ไม่ได้",
+        "โปรดตรวจสอบว่าชื่อบัญชีไม่มีเว้นวรรค",
+        "รหัสผ่านต้องอย่างน้อย",
+        "ตัวอักษร",
+        "และมีตัวพิมพ์ใหญ่",
+        "ตัวพิมพ์เล็ก",
+        "และตัวเลข",
+        "ห้ามมีช่องว่างหรือสัญลักษณ์"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "account_create_failed"
+    },
+    {
+      "doc_id": "faq-002-password-reset-en",
+      "language": "en-US",
+      "question": "I forgot my password. What should I do?",
+      "answer": "Open the app and use “Forgot Password” to reset your password.",
+      "tags": [
+        "password",
+        "reset",
+        "account",
+        "帳戶",
+        "forgot",
+        "what",
+        "should",
+        "open",
+        "the",
+        "app",
+        "and",
+        "use"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "password_reset"
+    },
+    {
+      "doc_id": "faq-002-password-reset-zh",
+      "language": "zh-HK",
+      "question": "忘記密碼點算？",
+      "answer": "打開 App，使用「忘記密碼」重設密碼。",
+      "tags": [
+        "password",
+        "reset",
+        "account",
+        "帳戶",
+        "忘記密碼點算",
+        "打開",
+        "app",
+        "使用",
+        "忘記密碼",
+        "重設密碼"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "password_reset"
+    },
+    {
+      "doc_id": "faq-002-password-reset-th",
+      "language": "th-TH",
+      "question": "ฉันลืมรหัสผ่าน ต้องทำอย่างไร",
+      "answer": "เปิดแอปแล้วเลือก “ลืมรหัสผ่าน” เพื่อรีเซ็ตรหัสผ่าน",
+      "tags": [
+        "password",
+        "reset",
+        "account",
+        "帳戶",
+        "ฉันลืมรหัสผ่าน",
+        "ต้องทำอย่างไร",
+        "เปิดแอปแล้วเลือก",
+        "ลืมรหัสผ่าน",
+        "เพื่อรีเซ็ตรหัสผ่าน"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "password_reset"
+    },
+    {
+      "doc_id": "faq-003-find-user-id-en",
+      "language": "en-US",
+      "question": "How can I find my User ID?",
+      "answer": "Open the XECO app, tap the menu, then select Settings.",
+      "tags": [
+        "find",
+        "user",
+        "account",
+        "帳戶",
+        "how",
+        "can",
+        "open",
+        "the",
+        "xeco",
+        "app",
+        "tap",
+        "menu"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "find_user_id"
+    },
+    {
+      "doc_id": "faq-003-find-user-id-zh",
+      "language": "zh-HK",
+      "question": "點樣搵用戶 ID？",
+      "answer": "打開 XECO App → 三橫線選單 → 設定。",
+      "tags": [
+        "find",
+        "user",
+        "account",
+        "帳戶",
+        "點樣搵用戶",
+        "打開",
+        "xeco",
+        "app",
+        "三橫線選單",
+        "設定"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "find_user_id"
+    },
+    {
+      "doc_id": "faq-003-find-user-id-th",
+      "language": "th-TH",
+      "question": "ฉันจะหา User ID ได้อย่างไร",
+      "answer": "เปิดแอป XECO แล้วแตะเมนู (≡) จากนั้นเลือก “การตั้งค่า”",
+      "tags": [
+        "find",
+        "user",
+        "account",
+        "帳戶",
+        "ฉันจะหา",
+        "ได้อย่างไร",
+        "เปิดแอป",
+        "xeco",
+        "แล้วแตะเมนู",
+        "จากนั้นเลือก",
+        "การตั้งค่า"
+      ],
+      "category": "Account / 帳戶",
+      "intent": "find_user_id"
+    },
+    {
+      "doc_id": "faq-004-app-download-en",
+      "language": "en-US",
+      "question": "How do I download the XECO HK app?",
+      "answer": "Download the XECO HK app from the App Store or Google Play, or scan the QR code on the XECO website.",
+      "tags": [
+        "app",
+        "download",
+        "account",
+        "應用程式與帳戶",
+        "how",
+        "the",
+        "xeco",
+        "from",
+        "store",
+        "google",
+        "play",
+        "scan"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "app_download"
+    },
+    {
+      "doc_id": "faq-004-app-download-zh",
+      "language": "zh-HK",
+      "question": "如何下載 XECO HK 應用程式？",
+      "answer": "於 App Store 或 Google Play 下載 XECO HK App，或掃描 XECO 官網的 QR Code。",
+      "tags": [
+        "app",
+        "download",
+        "account",
+        "應用程式與帳戶",
+        "如何下載",
+        "xeco",
+        "應用程式",
+        "於",
+        "store",
+        "或",
+        "google",
+        "play"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "app_download"
+    },
+    {
+      "doc_id": "faq-004-app-download-th",
+      "language": "th-TH",
+      "question": "จะดาวน์โหลดแอป XECO HK ได้อย่างไร",
+      "answer": "ดาวน์โหลดแอป XECO HK จาก App Store (iOS) หรือ Google Play (Android) หรือสแกน QR Code จากเว็บไซต์ XECO",
+      "tags": [
+        "app",
+        "download",
+        "account",
+        "應用程式與帳戶",
+        "จะดาวน์โหลดแอป",
+        "xeco",
+        "ได้อย่างไร",
+        "ดาวน์โหลดแอป",
+        "จาก",
+        "store",
+        "ios",
+        "หรือ"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "app_download"
+    },
+    {
+      "doc_id": "faq-005-landline-not-allowed-en",
+      "language": "en-US",
+      "question": "Can I use a landline phone number for registration?",
+      "answer": "No. Use a mobile phone number that can receive SMS verification codes.",
+      "tags": [
+        "landline",
+        "not",
+        "allowed",
+        "app",
+        "account",
+        "應用程式與帳戶",
+        "can",
+        "use",
+        "phone",
+        "number",
+        "for",
+        "registration"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "landline_not_allowed"
+    },
+    {
+      "doc_id": "faq-005-landline-not-allowed-zh",
+      "language": "zh-HK",
+      "question": "可否使用固網電話註冊？",
+      "answer": "不可以，請使用可接收 SMS 驗證碼的流動電話號碼。",
+      "tags": [
+        "landline",
+        "not",
+        "allowed",
+        "app",
+        "account",
+        "應用程式與帳戶",
+        "可否使用固網電話註冊",
+        "不可以",
+        "請使用可接收",
+        "sms",
+        "驗證碼的流動電話號碼"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "landline_not_allowed"
+    },
+    {
+      "doc_id": "faq-005-landline-not-allowed-th",
+      "language": "th-TH",
+      "question": "สามารถใช้เบอร์โทรศัพท์บ้านเพื่อลงทะเบียนได้หรือไม่",
+      "answer": "ไม่ได้ ต้องใช้หมายเลขโทรศัพท์มือถือที่สามารถรับรหัสยืนยันทาง SMS ได้",
+      "tags": [
+        "landline",
+        "not",
+        "allowed",
+        "app",
+        "account",
+        "應用程式與帳戶",
+        "สามารถใช้เบอร์โทรศัพท์บ้านเพื่อลงทะเบียนได้หรือไม่",
+        "ไม่ได้",
+        "ต้องใช้หมายเลขโทรศัพท์มือถือที่สามารถรับรหัสยืนยันทาง",
+        "sms",
+        "ได้"
+      ],
+      "category": "App & Account / 應用程式與帳戶",
+      "intent": "landline_not_allowed"
+    },
+    {
+      "doc_id": "faq-006-app-features-en",
+      "language": "en-US",
+      "question": "What features does the XECO app provide?",
+      "answer": "Use the app to manage your account, top up the wallet, scan QR codes to charge, check station status, and view charging and transaction records.",
+      "tags": [
+        "app",
+        "features",
+        "應用功能",
+        "what",
+        "does",
+        "the",
+        "xeco",
+        "provide",
+        "use",
+        "manage",
+        "your",
+        "account"
+      ],
+      "category": "App Features / 應用功能",
+      "intent": "app_features"
+    },
+    {
+      "doc_id": "faq-006-app-features-zh",
+      "language": "zh-HK",
+      "question": "XECO 應用程式提供哪些功能？",
+      "answer": "可於 App 內管理帳戶、充值錢包、掃描 QR Code 充電、查看充電站狀態及充電與交易紀錄。",
+      "tags": [
+        "app",
+        "features",
+        "應用功能",
+        "xeco",
+        "應用程式提供哪些功能",
+        "可於",
+        "內管理帳戶",
+        "充值錢包",
+        "掃描",
+        "code",
+        "充電",
+        "查看充電站狀態及充電與交易紀錄"
+      ],
+      "category": "App Features / 應用功能",
+      "intent": "app_features"
+    },
+    {
+      "doc_id": "faq-006-app-features-th",
+      "language": "th-TH",
+      "question": "แอป XECO มีฟีเจอร์อะไรบ้าง",
+      "answer": "ใช้แอปเพื่อจัดการสมาชิก เติมเงินวอลเล็ต สแกน QR เพื่อเริ่มชาร์จ ตรวจสอบสถานีแบบเรียลไทม์ และดูประวัติการชาร์จ/ธุรกรรม",
+      "tags": [
+        "app",
+        "features",
+        "應用功能",
+        "แอป",
+        "xeco",
+        "มีฟีเจอร์อะไรบ้าง",
+        "ใช้แอปเพื่อจัดการสมาชิก",
+        "เติมเงินวอลเล็ต",
+        "สแกน",
+        "เพื่อเริ่มชาร์จ",
+        "ตรวจสอบสถานีแบบเรียลไทม์",
+        "และดูประวัติการชาร์จ"
+      ],
+      "category": "App Features / 應用功能",
+      "intent": "app_features"
+    },
+    {
+      "doc_id": "faq-007-charging-cable-locked-en",
+      "language": "en-US",
+      "question": "Why can’t I unplug the charging cable?",
+      "answer": "Before unplugging, please make sure charging has fully stopped.\nThe charging connector may be locked by the vehicle. Turn off the vehicle, lock once then unlock, wait a few seconds, and try unplugging again.",
+      "tags": [
+        "charging",
+        "cable",
+        "locked",
+        "issues",
+        "充電槍問題",
+        "why",
+        "can",
+        "unplug",
+        "the",
+        "before",
+        "unplugging",
+        "please"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "charging_cable_locked"
+    },
+    {
+      "doc_id": "faq-007-charging-cable-locked-zh",
+      "language": "zh-HK",
+      "question": "為何無法拔出充電槍？",
+      "answer": "拔槍前請先確認充電已完全停止。\n充電槍可能被車輛鎖定。請熄車後鎖一次車門，再解鎖車門，等數秒後即可拔出充電槍。",
+      "tags": [
+        "charging",
+        "cable",
+        "locked",
+        "issues",
+        "充電槍問題",
+        "為何無法拔出充電槍",
+        "拔槍前請先確認充電已完全停止",
+        "充電槍可能被車輛鎖定",
+        "請熄車後鎖一次車門",
+        "再解鎖車門",
+        "等數秒後即可拔出充電槍"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "charging_cable_locked"
+    },
+    {
+      "doc_id": "faq-007-charging-cable-locked-th",
+      "language": "th-TH",
+      "question": "ทำไมฉันจึงถอดหัวชาร์จออกไม่ได้",
+      "answer": "ก่อนถอดหัวชาร์จ โปรดตรวจสอบว่าได้หยุดการชาร์จเรียบร้อยแล้ว\nหัวชาร์จอาจถูกล็อกโดยรถ ให้ดับรถ ล็อกรถ 1 ครั้ง จากนั้นปลดล็อก รอสักครู่ แล้วลองถอดอีกครั้ง",
+      "tags": [
+        "charging",
+        "cable",
+        "locked",
+        "issues",
+        "充電槍問題",
+        "ทำไมฉันจึงถอดหัวชาร์จออกไม่ได้",
+        "ก่อนถอดหัวชาร์จ",
+        "โปรดตรวจสอบว่าได้หยุดการชาร์จเรียบร้อยแล้ว",
+        "หัวชาร์จอาจถูกล็อกโดยรถ",
+        "ให้ดับรถ",
+        "ล็อกรถ",
+        "ครั้ง"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "charging_cable_locked"
+    },
+    {
+      "doc_id": "faq-008-emergency-stop-limit-en",
+      "language": "en-US",
+      "question": "Does the emergency stop button unlock the cable?",
+      "answer": "No. The emergency stop button only cuts off power temporarily and does not unlock the connector.\nTo release the connector, please lock the vehicle once, then unlock it, and try unplugging again.",
+      "tags": [
+        "emergency",
+        "stop",
+        "limit",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "does",
+        "the",
+        "button",
+        "unlock",
+        "only",
+        "cuts"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "emergency_stop_limit"
+    },
+    {
+      "doc_id": "faq-008-emergency-stop-limit-zh",
+      "language": "zh-HK",
+      "question": "緊急停止按鈕可否解鎖充電槍？",
+      "answer": "不能。緊急停止按鈕只會臨時中斷供電，並不會解鎖充電槍。\n如需解除鎖定，請鎖一次車門，再解鎖車門，然後再嘗試拔槍。",
+      "tags": [
+        "emergency",
+        "stop",
+        "limit",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "緊急停止按鈕可否解鎖充電槍",
+        "不能",
+        "緊急停止按鈕只會臨時中斷供電",
+        "並不會解鎖充電槍",
+        "如需解除鎖定",
+        "請鎖一次車門"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "emergency_stop_limit"
+    },
+    {
+      "doc_id": "faq-008-emergency-stop-limit-th",
+      "language": "th-TH",
+      "question": "ปุ่มหยุดฉุกเฉินช่วยปลดล็อกหัวชาร์จได้หรือไม่",
+      "answer": "ไม่ได้ ปุ่มหยุดฉุกเฉินจะตัดไฟชั่วคราวเท่านั้นและไม่ปลดล็อกหัวชาร์จ\nหากต้องการปลดล็อก ให้ล็อกรถ 1 ครั้ง แล้วปลดล็อก จากนั้นลองถอดหัวชาร์จอีกครั้ง",
+      "tags": [
+        "emergency",
+        "stop",
+        "limit",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "ปุ่มหยุดฉุกเฉินช่วยปลดล็อกหัวชาร์จได้หรือไม่",
+        "ไม่ได้",
+        "ปุ่มหยุดฉุกเฉินจะตัดไฟชั่วคราวเท่านั้นและไม่ปลดล็อกหัวชาร์จ",
+        "หากต้องการปลดล็อก",
+        "ให้ล็อกรถ",
+        "ครั้ง"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "emergency_stop_limit"
+    },
+    {
+      "doc_id": "faq-009-manual-release-en",
+      "language": "en-US",
+      "question": "What if the cable is still locked?",
+      "answer": "Check your vehicle manual and use the manual emergency cable release if available.",
+      "tags": [
+        "manual",
+        "release",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "what",
+        "the",
+        "still",
+        "locked",
+        "check",
+        "your",
+        "vehicle"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "manual_release"
+    },
+    {
+      "doc_id": "faq-009-manual-release-zh",
+      "language": "zh-HK",
+      "question": "若充電槍仍被鎖定？",
+      "answer": "請參考車主手冊，使用車輛的手動緊急解鎖裝置。",
+      "tags": [
+        "manual",
+        "release",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "若充電槍仍被鎖定",
+        "請參考車主手冊",
+        "使用車輛的手動緊急解鎖裝置"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "manual_release"
+    },
+    {
+      "doc_id": "faq-009-manual-release-th",
+      "language": "th-TH",
+      "question": "ถ้าหัวชาร์จยังถูกล็อกอยู่ ควรทำอย่างไร",
+      "answer": "ตรวจสอบคู่มือรถและใช้ตัวปลดล็อกหัวชาร์จฉุกเฉินแบบมือ (manual emergency release) ตามที่ระบุในคู่มือ",
+      "tags": [
+        "manual",
+        "release",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "ถ้าหัวชาร์จยังถูกล็อกอยู่",
+        "ควรทำอย่างไร",
+        "ตรวจสอบคู่มือรถและใช้ตัวปลดล็อกหัวชาร์จฉุกเฉินแบบมือ",
+        "emergency",
+        "ตามที่ระบุในคู่มือ"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "manual_release"
+    },
+    {
+      "doc_id": "faq-010-contact-support-cable-en",
+      "language": "en-US",
+      "question": "What if I still cannot unplug the cable?",
+      "answer": "Stop trying and contact customer support immediately. Do not force removal.",
+      "tags": [
+        "contact",
+        "support",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "what",
+        "still",
+        "cannot",
+        "unplug",
+        "the",
+        "stop",
+        "trying"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "contact_support_cable"
+    },
+    {
+      "doc_id": "faq-010-contact-support-cable-zh",
+      "language": "zh-HK",
+      "question": "若完全無法解鎖？",
+      "answer": "請停止操作並立即聯絡客戶支援，切勿強行拔除。",
+      "tags": [
+        "contact",
+        "support",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "若完全無法解鎖",
+        "請停止操作並立即聯絡客戶支援",
+        "切勿強行拔除"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "contact_support_cable"
+    },
+    {
+      "doc_id": "faq-010-contact-support-cable-th",
+      "language": "th-TH",
+      "question": "ถ้ายังถอดหัวชาร์จไม่ได้เลย ควรทำอย่างไร",
+      "answer": "หยุดพยายามและติดต่อฝ่ายบริการลูกค้าทันที ห้ามดึงหรือฝืนถอดหัวชาร์จ",
+      "tags": [
+        "contact",
+        "support",
+        "cable",
+        "issues",
+        "充電槍問題",
+        "ถ้ายังถอดหัวชาร์จไม่ได้เลย",
+        "ควรทำอย่างไร",
+        "หยุดพยายามและติดต่อฝ่ายบริการลูกค้าทันที",
+        "ห้ามดึงหรือฝืนถอดหัวชาร์จ"
+      ],
+      "category": "Cable Issues / 充電槍問題",
+      "intent": "contact_support_cable"
+    },
+    {
+      "doc_id": "faq-011-charging-display-difference-en",
+      "language": "en-US",
+      "question": "Why is the charging amount different from my car?",
+      "answer": "This is normal. Differences are due to energy loss and different vehicle calculation methods.",
+      "tags": [
+        "charging",
+        "display",
+        "difference",
+        "充電顯示",
+        "why",
+        "the",
+        "amount",
+        "different",
+        "from",
+        "car",
+        "this",
+        "normal"
+      ],
+      "category": "Charging Display / 充電顯示",
+      "intent": "charging_display_difference"
+    },
+    {
+      "doc_id": "faq-011-charging-display-difference-zh",
+      "language": "zh-HK",
+      "question": "點解充電量同車內顯示唔同？",
+      "answer": "屬正常情況，因能量損耗及不同車廠的計算方式而出現差異。",
+      "tags": [
+        "charging",
+        "display",
+        "difference",
+        "充電顯示",
+        "點解充電量同車內顯示唔同",
+        "屬正常情況",
+        "因能量損耗及不同車廠的計算方式而出現差異"
+      ],
+      "category": "Charging Display / 充電顯示",
+      "intent": "charging_display_difference"
+    },
+    {
+      "doc_id": "faq-011-charging-display-difference-th",
+      "language": "th-TH",
+      "question": "ทำไมปริมาณไฟที่แสดงบนแอป/เครื่องชาร์จต่างจากในรถ",
+      "answer": "เป็นเรื่องปกติ ความแตกต่างอาจเกิดจากการสูญเสียพลังงานระหว่างการส่งกำลังไฟและวิธีคำนวณของระบบ/ยี่ห้อรถที่ต่างกัน",
+      "tags": [
+        "charging",
+        "display",
+        "difference",
+        "充電顯示",
+        "ทำไมปริมาณไฟที่แสดงบนแอป",
+        "เครื่องชาร์จต่างจากในรถ",
+        "เป็นเรื่องปกติ",
+        "ความแตกต่างอาจเกิดจากการสูญเสียพลังงานระหว่างการส่งกำลังไฟและวิธีคำนวณของระบบ",
+        "ยี่ห้อรถที่ต่างกัน"
+      ],
+      "category": "Charging Display / 充電顯示",
+      "intent": "charging_display_difference"
+    },
+    {
+      "doc_id": "faq-012-charging-not-starting-en",
+      "language": "en-US",
+      "question": "I scanned the QR code but charging did not start.",
+      "answer": "Unplug the cable, close the app, turn off the vehicle, wait 10 seconds, restart the car, reinsert the cable, reopen the app, scan the QR code, and press Start.",
+      "tags": [
+        "charging",
+        "not",
+        "starting",
+        "process",
+        "充電流程",
+        "scanned",
+        "the",
+        "code",
+        "but",
+        "did",
+        "start",
+        "unplug"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_not_starting"
+    },
+    {
+      "doc_id": "faq-012-charging-not-starting-zh",
+      "language": "zh-HK",
+      "question": "掃 Code 但充唔到電？",
+      "answer": "拔出充電槍、關閉 App、熄車等 10 秒，再啟動車輛、插槍、開 App 掃描 QR Code 並按「開始」。",
+      "tags": [
+        "charging",
+        "not",
+        "starting",
+        "process",
+        "充電流程",
+        "掃",
+        "code",
+        "但充唔到電",
+        "拔出充電槍",
+        "關閉",
+        "app",
+        "熄車等"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_not_starting"
+    },
+    {
+      "doc_id": "faq-012-charging-not-starting-th",
+      "language": "th-TH",
+      "question": "ฉันสแกน QR แล้วแต่ชาร์จไม่เริ่ม ควรทำอย่างไร",
+      "answer": "ถอดหัวชาร์จ ปิดแอปให้สนิท ดับรถ รอ 10 วินาที จากนั้นสตาร์ทรถแล้วดับอีกครั้ง\nเสียบหัวชาร์จ เปิดแอป สแกน QR แล้วกด “เริ่มชาร์จ”",
+      "tags": [
+        "charging",
+        "not",
+        "starting",
+        "process",
+        "充電流程",
+        "ฉันสแกน",
+        "แล้วแต่ชาร์จไม่เริ่ม",
+        "ควรทำอย่างไร",
+        "ถอดหัวชาร์จ",
+        "ปิดแอปให้สนิท",
+        "ดับรถ",
+        "รอ"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_not_starting"
+    },
+    {
+      "doc_id": "faq-013-charging-started-en",
+      "language": "en-US",
+      "question": "Charging started successfully. What should I do if there is an issue?",
+      "answer": "If any issue occurs during charging, please take a photo/screenshot or video as evidence, then contact XECO Customer Support (WhatsApp) for assistance.",
+      "tags": [
+        "charging",
+        "started",
+        "process",
+        "充電流程",
+        "successfully",
+        "what",
+        "should",
+        "there",
+        "issue",
+        "any",
+        "occurs",
+        "during"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_started"
+    },
+    {
+      "doc_id": "faq-013-charging-started-zh",
+      "language": "zh-HK",
+      "question": "已成功充電，有問題點算？",
+      "answer": "如充電期間出現任何問題，請先截圖／拍照或拍片作記錄，然後透過 XECO 客服（WhatsApp）聯絡我們跟進。",
+      "tags": [
+        "charging",
+        "started",
+        "process",
+        "充電流程",
+        "已成功充電",
+        "有問題點算",
+        "如充電期間出現任何問題",
+        "請先截圖",
+        "拍照或拍片作記錄",
+        "然後透過",
+        "xeco",
+        "客服"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_started"
+    },
+    {
+      "doc_id": "faq-013-charging-started-th",
+      "language": "th-TH",
+      "question": "ชาร์จเริ่มแล้ว หากมีปัญหาควรทำอย่างไร",
+      "answer": "หากมีปัญหาระหว่างชาร์จ โปรดถ่ายรูป/บันทึกหน้าจอหรือวิดีโอ แล้วติดต่อฝ่ายบริการลูกค้า XECO (WhatsApp) เพื่อขอความช่วยเหลือ",
+      "tags": [
+        "charging",
+        "started",
+        "process",
+        "充電流程",
+        "ชาร์จเริ่มแล้ว",
+        "หากมีปัญหาควรทำอย่างไร",
+        "หากมีปัญหาระหว่างชาร์จ",
+        "โปรดถ่ายรูป",
+        "บันทึกหน้าจอหรือวิดีโอ",
+        "แล้วติดต่อฝ่ายบริการลูกค้า",
+        "xeco",
+        "whatsapp"
+      ],
+      "category": "Charging Process / 充電流程",
+      "intent": "charging_started"
+    },
+    {
+      "doc_id": "faq-014-choose-charger-en",
+      "language": "en-US",
+      "question": "Which charger should I choose for my car?",
+      "answer": "Choose a charger close to your car’s maximum charging power.",
+      "tags": [
+        "choose",
+        "charger",
+        "choosing",
+        "選擇充電器",
+        "which",
+        "should",
+        "for",
+        "car",
+        "close",
+        "your",
+        "maximum",
+        "charging"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "choose_charger"
+    },
+    {
+      "doc_id": "faq-014-choose-charger-zh",
+      "language": "zh-HK",
+      "question": "我應選擇哪一個充電器？",
+      "answer": "選擇接近車輛最高可接受功率的充電器。",
+      "tags": [
+        "choose",
+        "charger",
+        "choosing",
+        "選擇充電器",
+        "我應選擇哪一個充電器",
+        "選擇接近車輛最高可接受功率的充電器"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "choose_charger"
+    },
+    {
+      "doc_id": "faq-014-choose-charger-th",
+      "language": "th-TH",
+      "question": "ควรเลือกเครื่องชาร์จแบบไหนสำหรับรถของฉัน",
+      "answer": "เลือกเครื่องชาร์จที่กำลังไฟใกล้เคียงกับกำลังชาร์จสูงสุดที่รถรองรับ เพื่อประสิทธิภาพที่ดีที่สุด",
+      "tags": [
+        "choose",
+        "charger",
+        "choosing",
+        "選擇充電器",
+        "ควรเลือกเครื่องชาร์จแบบไหนสำหรับรถของฉัน",
+        "เลือกเครื่องชาร์จที่กำลังไฟใกล้เคียงกับกำลังชาร์จสูงสุดที่รถรองรับ",
+        "เพื่อประสิทธิภาพที่ดีที่สุด"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "choose_charger"
+    },
+    {
+      "doc_id": "faq-015-higher-power-ok-en",
+      "language": "en-US",
+      "question": "Can I use a higher-power charger?",
+      "answer": "Yes. Plug in and charge normally. The vehicle will limit the power automatically.",
+      "tags": [
+        "higher",
+        "power",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "can",
+        "use",
+        "yes",
+        "plug",
+        "and",
+        "charge",
+        "normally"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "higher_power_ok"
+    },
+    {
+      "doc_id": "faq-015-higher-power-ok-zh",
+      "language": "zh-HK",
+      "question": "可否使用高於車輛支援功率的充電器？",
+      "answer": "可以，正常插槍充電，車輛會自動限制功率。",
+      "tags": [
+        "higher",
+        "power",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "可否使用高於車輛支援功率的充電器",
+        "可以",
+        "正常插槍充電",
+        "車輛會自動限制功率"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "higher_power_ok"
+    },
+    {
+      "doc_id": "faq-015-higher-power-ok-th",
+      "language": "th-TH",
+      "question": "ฉันสามารถใช้เครื่องชาร์จที่กำลังสูงกว่าที่รถรองรับได้หรือไม่",
+      "answer": "ได้ เสียบและชาร์จได้ตามปกติ รถจะจำกัดกำลังไฟที่ดึงโดยอัตโนมัติ",
+      "tags": [
+        "higher",
+        "power",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "ฉันสามารถใช้เครื่องชาร์จที่กำลังสูงกว่าที่รถรองรับได้หรือไม่",
+        "ได้",
+        "เสียบและชาร์จได้ตามปกติ",
+        "รถจะจำกัดกำลังไฟที่ดึงโดยอัตโนมัติ"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "higher_power_ok"
+    },
+    {
+      "doc_id": "faq-016-charging-speed-low-en",
+      "language": "en-US",
+      "question": "Why is my charging speed lower than expected?",
+      "answer": "If multiple vehicles are sharing the same charger, charging power may be distributed and speed may be lower.\nYou may try another charger that is idle or has fewer vehicles in use.\nActual charging power is also determined by the vehicle system based on its demand.",
+      "tags": [
+        "charging",
+        "speed",
+        "low",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "why",
+        "lower",
+        "than",
+        "expected",
+        "multiple",
+        "vehicles"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "charging_speed_low"
+    },
+    {
+      "doc_id": "faq-016-charging-speed-low-zh",
+      "language": "zh-HK",
+      "question": "為何充電速度較慢？",
+      "answer": "如同一充電樁同時供多輛車使用，功率可能會被分配，導致充電速度較低。\n建議改用現場較空閒或較少車輛使用中的充電樁。\n實際充電功率亦會由車輛系統按需求自動調整。",
+      "tags": [
+        "charging",
+        "speed",
+        "low",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "為何充電速度較慢",
+        "如同一充電樁同時供多輛車使用",
+        "功率可能會被分配",
+        "導致充電速度較低",
+        "建議改用現場較空閒或較少車輛使用中的充電樁",
+        "實際充電功率亦會由車輛系統按需求自動調整"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "charging_speed_low"
+    },
+    {
+      "doc_id": "faq-016-charging-speed-low-th",
+      "language": "th-TH",
+      "question": "ทำไมความเร็วชาร์จของฉันต่ำกว่าที่คาด",
+      "answer": "หากมีหลายคันใช้ระบบแชร์กำลังไฟ กำลังชาร์จอาจถูกแบ่งทำให้ช้าลง\nลองเปลี่ยนไปใช้เครื่องชาร์จที่ว่างหรือมีผู้ใช้น้อยกว่า\nกำลังชาร์จจริงยังขึ้นอยู่กับการจัดการของระบบรถตามความต้องการ",
+      "tags": [
+        "charging",
+        "speed",
+        "low",
+        "choosing",
+        "charger",
+        "選擇充電器",
+        "ทำไมความเร็วชาร์จของฉันต่ำกว่าที่คาด",
+        "หากมีหลายคันใช้ระบบแชร์กำลังไฟ",
+        "กำลังชาร์จอาจถูกแบ่งทำให้ช้าลง",
+        "ลองเปลี่ยนไปใช้เครื่องชาร์จที่ว่างหรือมีผู้ใช้น้อยกว่า",
+        "กำลังชาร์จจริงยังขึ้นอยู่กับการจัดการของระบบรถตามความต้องการ"
+      ],
+      "category": "Choosing a Charger / 選擇充電器",
+      "intent": "charging_speed_low"
+    },
+    {
+      "doc_id": "faq-017-no-overtime-fee-en",
+      "language": "en-US",
+      "question": "Is there any overtime fee?",
+      "answer": "Currently, no overtime fee is charged after charging is completed.",
+      "tags": [
+        "overtime",
+        "fee",
+        "fees",
+        "收費",
+        "there",
+        "any",
+        "currently",
+        "charged",
+        "after",
+        "charging",
+        "completed"
+      ],
+      "category": "Fees / 收費",
+      "intent": "no_overtime_fee"
+    },
+    {
+      "doc_id": "faq-017-no-overtime-fee-zh",
+      "language": "zh-HK",
+      "question": "有冇逾時收費？",
+      "answer": "目前未有於充電完成後收取逾時費用。",
+      "tags": [
+        "overtime",
+        "fee",
+        "fees",
+        "收費",
+        "有冇逾時收費",
+        "目前未有於充電完成後收取逾時費用"
+      ],
+      "category": "Fees / 收費",
+      "intent": "no_overtime_fee"
+    },
+    {
+      "doc_id": "faq-017-no-overtime-fee-th",
+      "language": "th-TH",
+      "question": "มีค่าบริการจอดเกินเวลาหรือไม่",
+      "answer": "ขณะนี้ยังไม่มีการคิดค่าจอดเกินเวลา (overtime fee)",
+      "tags": [
+        "overtime",
+        "fee",
+        "fees",
+        "收費",
+        "มีค่าบริการจอดเกินเวลาหรือไม่",
+        "ขณะนี้ยังไม่มีการคิดค่าจอดเกินเวลา"
+      ],
+      "category": "Fees / 收費",
+      "intent": "no_overtime_fee"
+    },
+    {
+      "doc_id": "faq-018-charging-locations-en",
+      "language": "en-US",
+      "question": "Where are XECO charging stations located?",
+      "answer": "Open the XECO app or visit the official website to view the latest charging locations.",
+      "tags": [
+        "charging",
+        "locations",
+        "general",
+        "一般",
+        "where",
+        "are",
+        "xeco",
+        "stations",
+        "located",
+        "open",
+        "the",
+        "app"
+      ],
+      "category": "General / 一般",
+      "intent": "charging_locations"
+    },
+    {
+      "doc_id": "faq-018-charging-locations-zh",
+      "language": "zh-HK",
+      "question": "XECO 充電站喺邊度？",
+      "answer": "請於 XECO App 或官方網站查看最新充電站位置。",
+      "tags": [
+        "charging",
+        "locations",
+        "general",
+        "一般",
+        "xeco",
+        "充電站喺邊度",
+        "請於",
+        "app",
+        "或官方網站查看最新充電站位置"
+      ],
+      "category": "General / 一般",
+      "intent": "charging_locations"
+    },
+    {
+      "doc_id": "faq-018-charging-locations-th",
+      "language": "th-TH",
+      "question": "สถานีชาร์จของ XECO อยู่ที่ไหน",
+      "answer": "เปิดแอป XECO หรือเข้าเว็บไซต์ทางการเพื่อดูตำแหน่งสถานีชาร์จล่าสุด",
+      "tags": [
+        "charging",
+        "locations",
+        "general",
+        "一般",
+        "สถานีชาร์จของ",
+        "xeco",
+        "อยู่ที่ไหน",
+        "เปิดแอป",
+        "หรือเข้าเว็บไซต์ทางการเพื่อดูตำแหน่งสถานีชาร์จล่าสุด"
+      ],
+      "category": "General / 一般",
+      "intent": "charging_locations"
+    },
+    {
+      "doc_id": "faq-019-wallet-no-expiry-en",
+      "language": "en-US",
+      "question": "Does wallet balance have an expiry date?",
+      "answer": "No expiry date. Use the balance anytime.",
+      "tags": [
+        "wallet",
+        "expiry",
+        "錢包",
+        "does",
+        "balance",
+        "have",
+        "date",
+        "use",
+        "the",
+        "anytime"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_no_expiry"
+    },
+    {
+      "doc_id": "faq-019-wallet-no-expiry-zh",
+      "language": "zh-HK",
+      "question": "錢包內金額有冇期限？",
+      "answer": "沒有使用期限，可隨時使用。",
+      "tags": [
+        "wallet",
+        "expiry",
+        "錢包",
+        "錢包內金額有冇期限",
+        "沒有使用期限",
+        "可隨時使用"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_no_expiry"
+    },
+    {
+      "doc_id": "faq-019-wallet-no-expiry-th",
+      "language": "th-TH",
+      "question": "เงินในวอลเล็ตมีวันหมดอายุไหม",
+      "answer": "ไม่มีวันหมดอายุ สามารถใช้ยอดคงเหลือได้ตลอดเวลา",
+      "tags": [
+        "wallet",
+        "expiry",
+        "錢包",
+        "เงินในวอลเล็ตมีวันหมดอายุไหม",
+        "ไม่มีวันหมดอายุ",
+        "สามารถใช้ยอดคงเหลือได้ตลอดเวลา"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_no_expiry"
+    },
+    {
+      "doc_id": "faq-020-wallet-balance-issue-en",
+      "language": "en-US",
+      "question": "Payment successful but wallet balance not updated or incorrect.",
+      "answer": "When contacting XECO Customer Support (WhatsApp), please provide:\n• Registered mobile number\n• User ID\n• Payment details (including a screenshot showing the transaction reference number)",
+      "tags": [
+        "wallet",
+        "balance",
+        "issue",
+        "錢包",
+        "payment",
+        "successful",
+        "but",
+        "not",
+        "updated",
+        "incorrect",
+        "when",
+        "contacting"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_balance_issue"
+    },
+    {
+      "doc_id": "faq-020-wallet-balance-issue-zh",
+      "language": "zh-HK",
+      "question": "已付款但錢包未更新或餘額唔啱？",
+      "answer": "聯絡 XECO 客服（WhatsApp）時，請提供：\n• 已登記手機號碼\n• 用戶 ID\n• 付款資料（包括顯示交易編號的截圖）",
+      "tags": [
+        "wallet",
+        "balance",
+        "issue",
+        "錢包",
+        "已付款但錢包未更新或餘額唔啱",
+        "聯絡",
+        "xeco",
+        "客服",
+        "whatsapp",
+        "時",
+        "請提供",
+        "已登記手機號碼"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_balance_issue"
+    },
+    {
+      "doc_id": "faq-020-wallet-balance-issue-th",
+      "language": "th-TH",
+      "question": "ชำระเงินสำเร็จแต่ยอดวอลเล็ตไม่อัปเดตหรือยอดไม่ถูกต้อง ต้องทำอย่างไร",
+      "answer": "เมื่อติดต่อฝ่ายบริการลูกค้า XECO (WhatsApp) โปรดส่งข้อมูลดังนี้:\n• หมายเลขมือถือที่ลงทะเบียน\n• User ID\n• รายละเอียดการชำระเงิน (รวมภาพหน้าจอที่แสดงเลขอ้างอิง/เลขที่รายการ)",
+      "tags": [
+        "wallet",
+        "balance",
+        "issue",
+        "錢包",
+        "ชำระเงินสำเร็จแต่ยอดวอลเล็ตไม่อัปเดตหรือยอดไม่ถูกต้อง",
+        "ต้องทำอย่างไร",
+        "เมื่อติดต่อฝ่ายบริการลูกค้า",
+        "xeco",
+        "whatsapp",
+        "โปรดส่งข้อมูลดังนี้",
+        "หมายเลขมือถือที่ลงทะเบียน",
+        "user"
+      ],
+      "category": "Wallet / 錢包",
+      "intent": "wallet_balance_issue"
+    },
+    {
+      "doc_id": "faq-021-refund-request-en",
+      "language": "en-US",
+      "question": "How can I request a refund?",
+      "answer": "Provide the payment transaction record to customer support.",
+      "tags": [
+        "refund",
+        "request",
+        "退款",
+        "how",
+        "can",
+        "provide",
+        "the",
+        "payment",
+        "transaction",
+        "record",
+        "customer",
+        "support"
+      ],
+      "category": "Refund / 退款",
+      "intent": "refund_request"
+    },
+    {
+      "doc_id": "faq-021-refund-request-zh",
+      "language": "zh-HK",
+      "question": "我想申請退款",
+      "answer": "請提供付款交易紀錄予客戶支援處理退款。",
+      "tags": [
+        "refund",
+        "request",
+        "退款",
+        "我想申請退款",
+        "請提供付款交易紀錄予客戶支援處理退款"
+      ],
+      "category": "Refund / 退款",
+      "intent": "refund_request"
+    },
+    {
+      "doc_id": "faq-021-refund-request-th",
+      "language": "th-TH",
+      "question": "ฉันจะขอคืนเงินได้อย่างไร",
+      "answer": "โปรดส่งหลักฐานรายการชำระเงินให้ฝ่ายบริการลูกค้าเพื่อดำเนินการคืนเงิน",
+      "tags": [
+        "refund",
+        "request",
+        "退款",
+        "ฉันจะขอคืนเงินได้อย่างไร",
+        "โปรดส่งหลักฐานรายการชำระเงินให้ฝ่ายบริการลูกค้าเพื่อดำเนินการคืนเงิน"
+      ],
+      "category": "Refund / 退款",
+      "intent": "refund_request"
+    },
+    {
+      "doc_id": "faq-022-safety-requirements-en",
+      "language": "en-US",
+      "question": "What are the safety requirements?",
+      "answer": "Check vehicle compatibility, keep cables clear, unplug before driving, and park only in designated bays.",
+      "tags": [
+        "safety",
+        "requirements",
+        "安全",
+        "what",
+        "are",
+        "the",
+        "check",
+        "vehicle",
+        "compatibility",
+        "keep",
+        "cables",
+        "clear"
+      ],
+      "category": "Safety / 安全",
+      "intent": "safety_requirements"
+    },
+    {
+      "doc_id": "faq-022-safety-requirements-zh",
+      "language": "zh-HK",
+      "question": "使用充電站有何安全要求？",
+      "answer": "請確認車輛相容、保持線纜暢通、駕駛前拔除充電槍，並只使用指定車位。",
+      "tags": [
+        "safety",
+        "requirements",
+        "安全",
+        "使用充電站有何安全要求",
+        "請確認車輛相容",
+        "保持線纜暢通",
+        "駕駛前拔除充電槍",
+        "並只使用指定車位"
+      ],
+      "category": "Safety / 安全",
+      "intent": "safety_requirements"
+    },
+    {
+      "doc_id": "faq-022-safety-requirements-th",
+      "language": "th-TH",
+      "question": "ข้อควรปฏิบัติด้านความปลอดภัยในการใช้สถานีชาร์จมีอะไรบ้าง",
+      "answer": "ตรวจสอบความเข้ากันได้ของรถและหัวชาร์จ ตรวจสอบให้สาย/หัวชาร์จอยู่ในสภาพสมบูรณ์ วางสายให้ปลอดภัยไม่กีดขวาง\nถอดหัวชาร์จก่อนขับรถออก และใช้เฉพาะช่องจอดที่กำหนด",
+      "tags": [
+        "safety",
+        "requirements",
+        "安全",
+        "ข้อควรปฏิบัติด้านความปลอดภัยในการใช้สถานีชาร์จมีอะไรบ้าง",
+        "ตรวจสอบความเข้ากันได้ของรถและหัวชาร์จ",
+        "ตรวจสอบให้สาย",
+        "หัวชาร์จอยู่ในสภาพสมบูรณ์",
+        "วางสายให้ปลอดภัยไม่กีดขวาง",
+        "ถอดหัวชาร์จก่อนขับรถออก",
+        "และใช้เฉพาะช่องจอดที่กำหนด"
+      ],
+      "category": "Safety / 安全",
+      "intent": "safety_requirements"
+    },
+    {
+      "doc_id": "faq-023-private-charger-en",
+      "language": "en-US",
+      "question": "Can I use the 21kW chargers at Tsing Yi site?",
+      "answer": "No. Those chargers are for private internal use only.",
+      "tags": [
+        "private",
+        "charger",
+        "site",
+        "usage",
+        "場地",
+        "can",
+        "use",
+        "the",
+        "21kw",
+        "chargers",
+        "tsing",
+        "those"
+      ],
+      "category": "Site Usage / 場地",
+      "intent": "private_charger"
+    },
+    {
+      "doc_id": "faq-023-private-charger-zh",
+      "language": "zh-HK",
+      "question": "青衣 21kW 充電樁可以用嗎？",
+      "answer": "不可以，該等充電樁屬私人內部用途。",
+      "tags": [
+        "private",
+        "charger",
+        "site",
+        "usage",
+        "場地",
+        "青衣",
+        "21kw",
+        "充電樁可以用嗎",
+        "不可以",
+        "該等充電樁屬私人內部用途"
+      ],
+      "category": "Site Usage / 場地",
+      "intent": "private_charger"
+    },
+    {
+      "doc_id": "faq-023-private-charger-th",
+      "language": "th-TH",
+      "question": "สามารถใช้เครื่องชาร์จ 21kW ที่ไซต์ชิงอี้ได้หรือไม่",
+      "answer": "ไม่ได้ เครื่องชาร์จดังกล่าวเป็นของใช้ภายใน (private) และไม่เปิดให้บุคคลทั่วไป",
+      "tags": [
+        "private",
+        "charger",
+        "site",
+        "usage",
+        "場地",
+        "สามารถใช้เครื่องชาร์จ",
+        "21kw",
+        "ที่ไซต์ชิงอี้ได้หรือไม่",
+        "ไม่ได้",
+        "เครื่องชาร์จดังกล่าวเป็นของใช้ภายใน",
+        "และไม่เปิดให้บุคคลทั่วไป"
+      ],
+      "category": "Site Usage / 場地",
+      "intent": "private_charger"
+    },
+    {
+      "doc_id": "faq-024-promotion-tuesday-en",
+      "language": "en-US",
+      "question": "When will Tuesday charging promotion be credited?",
+      "answer": "Eligible users who registered with a mobile number will receive the rebate automatically within 5–7 working days.",
+      "tags": [
+        "promotion",
+        "tuesday",
+        "優惠",
+        "when",
+        "will",
+        "charging",
+        "credited",
+        "eligible",
+        "users",
+        "who",
+        "registered",
+        "with"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_tuesday"
+    },
+    {
+      "doc_id": "faq-024-promotion-tuesday-zh",
+      "language": "zh-HK",
+      "question": "星期二優惠幾時回贈？",
+      "answer": "已用手機號碼登記且合資格的用戶，可於 5–7 個工作天內自動獲得回贈。",
+      "tags": [
+        "promotion",
+        "tuesday",
+        "優惠",
+        "星期二優惠幾時回贈",
+        "已用手機號碼登記且合資格的用戶",
+        "可於",
+        "個工作天內自動獲得回贈"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_tuesday"
+    },
+    {
+      "doc_id": "faq-024-promotion-tuesday-th",
+      "language": "th-TH",
+      "question": "โปรโมชั่นชาร์จวันอังคารจะได้รับเครดิตเมื่อไร",
+      "answer": "ผู้ใช้ที่ลงทะเบียนด้วยหมายเลขมือถือและมีสิทธิ์ จะได้รับเงินคืนเข้าวอลเล็ตโดยอัตโนมัติภายใน 5–7 วันทำการ",
+      "tags": [
+        "promotion",
+        "tuesday",
+        "優惠",
+        "โปรโมชั่นชาร์จวันอังคารจะได้รับเครดิตเมื่อไร",
+        "ผู้ใช้ที่ลงทะเบียนด้วยหมายเลขมือถือและมีสิทธิ์",
+        "จะได้รับเงินคืนเข้าวอลเล็ตโดยอัตโนมัติภายใน",
+        "วันทำการ"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_tuesday"
+    },
+    {
+      "doc_id": "faq-025-promotion-first-free-en",
+      "language": "en-US",
+      "question": "When will first-time free charging be credited?",
+      "answer": "For first-time registered users (with a mobile number), the rebate will be credited to the wallet within approximately 14 working days after the first successful charging session.",
+      "tags": [
+        "promotion",
+        "first",
+        "free",
+        "優惠",
+        "when",
+        "will",
+        "time",
+        "charging",
+        "credited",
+        "for",
+        "registered",
+        "users"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_first_free"
+    },
+    {
+      "doc_id": "faq-025-promotion-first-free-zh",
+      "language": "zh-HK",
+      "question": "首次免費充電幾時回贈？",
+      "answer": "已用手機號碼登記的首次用戶，完成首次成功充電後，回贈將於約 14 個工作天內存入錢包。",
+      "tags": [
+        "promotion",
+        "first",
+        "free",
+        "優惠",
+        "首次免費充電幾時回贈",
+        "已用手機號碼登記的首次用戶",
+        "完成首次成功充電後",
+        "回贈將於約",
+        "個工作天內存入錢包"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_first_free"
+    },
+    {
+      "doc_id": "faq-025-promotion-first-free-th",
+      "language": "th-TH",
+      "question": "เครดิตชาร์จฟรีครั้งแรกจะเข้าวอลเล็ตเมื่อไร",
+      "answer": "สำหรับผู้ใช้ที่ลงทะเบียนครั้งแรกด้วยหมายเลขมือถือ หลังจากชาร์จสำเร็จครั้งแรก เงินคืนจะเข้าวอลเล็ตภายในประมาณ 14 วันทำการ",
+      "tags": [
+        "promotion",
+        "first",
+        "free",
+        "優惠",
+        "เครดิตชาร์จฟรีครั้งแรกจะเข้าวอลเล็ตเมื่อไร",
+        "สำหรับผู้ใช้ที่ลงทะเบียนครั้งแรกด้วยหมายเลขมือถือ",
+        "หลังจากชาร์จสำเร็จครั้งแรก",
+        "เงินคืนจะเข้าวอลเล็ตภายในประมาณ",
+        "วันทำการ"
+      ],
+      "category": "Promotion / 優惠",
+      "intent": "promotion_first_free"
+    }
+  ]
+}

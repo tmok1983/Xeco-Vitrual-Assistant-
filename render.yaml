@@ -1,18 +1,40 @@
 services:
   - type: web
-    name: ai-insurance-assistant
+    name: xeco-ev-line-chatbot
     runtime: docker
     plan: starter
     autoDeploy: true
-    healthCheckPath: /api/health
+    healthCheckPath: /api/ev-support/health
+    disk:
+      name: runtime-data
+      mountPath: /app/runtime
+      sizeGB: 1
     envVars:
       - key: DATA_BACKEND
-        value: supabase
-      - key: DATABASE_URL
-        sync: false
+        value: memory
       - key: LLM_PROVIDER
         value: openai
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_REPLY_API_URL
+        value: https://api.line.me/v2/bot/message/reply
+      - key: LINE_PUSH_API_URL
+        value: https://api.line.me/v2/bot/message/push
+      - key: LINE_SUPPORT_GROUP_ID
+        sync: false
+      - key: EV_FAQ_PATH
+        value: /app/data/xeco_faq_corpus.json
+      - key: EV_CHAT_LOG_DB_PATH
+        value: /app/runtime/chat_logs.db
+      - key: EV_MEDIA_STORAGE_DIR
+        value: /app/runtime/line_media
+      - key: EV_DEFAULT_LANGUAGE
+        value: en-US
+      - key: EV_ENABLE_THAI_AFTER_SETUP
+        value: "false"

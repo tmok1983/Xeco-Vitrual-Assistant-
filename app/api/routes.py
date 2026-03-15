@@ -1,23 +1,43 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import json
 import ssl
+from functools import lru_cache
 from urllib import request
 from urllib.error import URLError
 
 import certifi
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from app.core.config import AppConfig
-from app.core.bootstrap import build_service
+from app.core.bootstrap import build_chat_log_repository, build_ev_support_service, build_service
 from app.core.models import IntakeRequest, ReviewDecision
+from app.ev_support.log_repository import ChatLogRecord
+from app.ev_support.models import EVSupportRequest, LinePushRequest, LineWebhookPayload
 from app.modules.google_slides import build_google_oauth_url, get_google_oauth_status, handle_google_oauth_callback
 from app.modules.proposal_pdf import build_proposal_pdf
 
 router = APIRouter(prefix="/api", tags=["insurance-assistant"])
-service = build_service()
 config = AppConfig.from_env()
+
+
+@lru_cache(maxsize=1)
+def get_service():
+    return build_service()
+
+
+@lru_cache(maxsize=1)
+def get_ev_support_service():
+    return build_ev_support_service()
+
+
+@lru_cache(maxsize=1)
+def get_chat_log_repository():
+    return build_chat_log_repository()
 
 
 def require_api_key(
@@ -46,6 +66,42 @@ def _post_to_n8n_webhook(payload: dict) -> tuple[int, dict]:
         except json.JSONDecodeError:
             body = {"raw": raw}
         return resp.status, body
+
+
+def _post_to_ev_n8n_webhook(payload: dict) -> tuple[int, dict]:
+    if not config.ev_n8n_webhook_url:
+        raise ValueError("EV_N8N_WEBHOOK_URL is not configured")
+
+    ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    req = request.Request(
+        config.ev_n8n_webhook_url,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(payload).encode("utf-8"),
+    )
+    with request.urlopen(req, timeout=120, context=ssl_ctx) as resp:  # nosec B310
+        raw = resp.read().decode("utf-8") or "{}"
+        try:
+            body = json.loads(raw)
+        except json.JSONDecodeError:
+            body = {"raw": raw}
+        return resp.status, body
+
+
+def _verify_line_signature(raw_body: bytes, signature: str | None) -> None:
+    if not config.line_channel_secret:
+        return
+    if not signature:
+        raise HTTPException(status_code=401, detail="Missing LINE signature")
+
+    digest = hmac.new(
+        config.line_channel_secret.encode("utf-8"),
+        raw_body,
+        hashlib.sha256,
+    ).digest()
+    expected = base64.b64encode(digest).decode("utf-8")
+    if not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=401, detail="Invalid LINE signature")
 
 
 def _format_case_output(case) -> dict:
@@ -84,6 +140,7 @@ def _format_case_output(case) -> dict:
 
 
 def _run_local_workbench(req: IntakeRequest) -> tuple[int, dict]:
+    service = get_service()
     result = service.intake_and_orchestrate(req)
     if "error" in result:
         err = result["error"]
@@ -122,6 +179,538 @@ def _run_local_workbench(req: IntakeRequest) -> tuple[int, dict]:
 @router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/ev-support/health")
+def ev_support_health() -> dict[str, str]:
+    return {"status": "ok", "service": "ev-support"}
+
+
+@router.post("/ev-support/respond")
+def ev_support_respond(req: EVSupportRequest) -> dict:
+    service = get_ev_support_service()
+    detected_language = service.detect_language(req.message_text, req.language)
+    repo = get_chat_log_repository()
+    repo.log_message(
+        ChatLogRecord(
+            session_id=req.session_id,
+            user_id=req.user_id,
+            channel=req.channel,
+            direction="inbound",
+            message_type="text",
+            language=detected_language,
+            detected_intent=None,
+            message_text=req.message_text,
+            analysis_text=None,
+            knowledge_hits=[],
+            status="received",
+        )
+    )
+    response = service.generate_reply(req)
+    repo.log_message(
+        ChatLogRecord(
+            session_id=response.session_id,
+            user_id=response.user_id,
+            channel=req.channel,
+            direction="outbound",
+            message_type="text",
+            language=response.detected_language,
+            detected_intent=response.detected_intent,
+            message_text=response.reply_text,
+            analysis_text=None,
+            knowledge_hits=response.knowledge_hits,
+            status="generated",
+        )
+    )
+    return response.model_dump(mode="json")
+
+
+@router.get("/ev-support/logs", dependencies=[Depends(require_api_key)])
+def ev_support_logs(limit: int = Query(default=100, ge=1, le=500), session_id: str | None = None) -> dict:
+    rows = get_chat_log_repository().list_messages(limit=limit, session_id=session_id)
+    return {"items": rows, "count": len(rows)}
+
+
+@router.post("/ev-support/line/webhook")
+async def ev_support_line_webhook(
+    request_: Request,
+    x_line_signature: str | None = Header(default=None, alias="X-Line-Signature"),
+) -> dict:
+    raw_body = await request_.body()
+    _verify_line_signature(raw_body, x_line_signature)
+    payload = LineWebhookPayload.model_validate_json(raw_body)
+
+    results: list[dict] = []
+    repo = get_chat_log_repository()
+    for event in payload.events:
+        if event.type != "message" or not event.message or event.message.type not in {"text", "image", "audio"}:
+            results.append({"status": "ignored", "reason": "unsupported_event"})
+            continue
+        raw_text = event.message.text or ""
+        if event.source.type != "user" or not event.source.userId:
+            ev_support_service = get_ev_support_service()
+            if (
+                event.source.type == "group"
+                and event.source.groupId
+                and event.source.groupId == config.line_support_group_id
+                and event.message.type == "text"
+            ):
+                target_session_id = ev_support_service.parse_handoff_close_command(raw_text)
+                if target_session_id:
+                    session = ev_support_service.close_human_handoff(target_session_id)
+                    if session:
+                        group_reply = ev_support_service.handoff_closed_group_text(target_session_id)
+                        customer_notice = ev_support_service.bot_resumed_customer_text(session.language)
+
+                        if config.line_channel_access_token:
+                            ev_support_service.send_line_push(
+                                LinePushRequest(
+                                    to=session.channel_user_id,
+                                    messages=[{"type": "text", "text": customer_notice}],
+                                )
+                            )
+                            repo.log_message(
+                                ChatLogRecord(
+                                    session_id=target_session_id,
+                                    user_id=session.channel_user_id,
+                                    channel="line",
+                                    direction="outbound",
+                                    message_type="text",
+                                    language=session.language,
+                                    detected_intent="human_handoff_closed",
+                                    message_text=customer_notice,
+                                    analysis_text=None,
+                                    knowledge_hits=[],
+                                    status="delivered",
+                                )
+                            )
+
+                        if event.replyToken and config.line_channel_access_token:
+                            status, body = ev_support_service.send_line_reply(
+                                ev_support_service.build_line_reply_request(
+                                    event.replyToken,
+                                    type("Resp", (), {"reply_text": group_reply}),
+                                )
+                            )
+                            repo.log_message(
+                                ChatLogRecord(
+                                    session_id=target_session_id,
+                                    user_id=event.source.groupId,
+                                    channel="line",
+                                    direction="outbound",
+                                    message_type="text",
+                                    language="en-US",
+                                    detected_intent="human_handoff_closed",
+                                    message_text=group_reply,
+                                    analysis_text=None,
+                                    knowledge_hits=[],
+                                    status="delivered" if status < 400 else "delivery_failed",
+                                    error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                                )
+                            )
+
+                        results.append({"status": "human_handoff_closed", "session_id": target_session_id})
+                        continue
+
+                    help_text = (
+                        f"No active session found for {target_session_id}.\n"
+                        f"{ev_support_service.handoff_close_help_text()}"
+                    )
+                    if event.replyToken and config.line_channel_access_token:
+                        ev_support_service.send_line_reply(
+                            ev_support_service.build_line_reply_request(
+                                event.replyToken,
+                                type("Resp", (), {"reply_text": help_text}),
+                            )
+                        )
+                    results.append({"status": "handoff_close_not_found", "session_id": target_session_id})
+                    continue
+
+            source_identifier = event.source.groupId or event.source.roomId or "unknown-source"
+            source_session_prefix = "line-group" if event.source.groupId else "line-room"
+            repo.log_message(
+                ChatLogRecord(
+                    session_id=f"{source_session_prefix}:{source_identifier}",
+                    user_id=source_identifier,
+                    channel="line",
+                    direction="inbound",
+                    message_type=event.message.type,
+                    language=config.ev_default_language,
+                    detected_intent="group_event_capture",
+                    message_text=raw_text or f"[{event.message.type} attachment]",
+                    analysis_text=(
+                        f"source_type={event.source.type}; "
+                        f"group_id={event.source.groupId or ''}; "
+                        f"room_id={event.source.roomId or ''}"
+                    ),
+                    knowledge_hits=[],
+                    status="received_non_user_source",
+                )
+            )
+            results.append(
+                {
+                    "status": "ignored",
+                    "reason": "non_user_source",
+                    "source_type": event.source.type,
+                    "group_id": event.source.groupId,
+                    "room_id": event.source.roomId,
+                }
+            )
+            continue
+
+        session_id = f"line:{event.source.userId}"
+        ev_support_service = get_ev_support_service()
+        detected_language = ev_support_service.detect_language(raw_text, config.ev_default_language)
+        session = ev_support_service._load_or_create_session(session_id, event.source.userId, "line", detected_language)
+        repo.log_message(
+            ChatLogRecord(
+                session_id=session_id,
+                user_id=event.source.userId,
+                channel="line",
+                direction="inbound",
+                message_type=event.message.type,
+                language=detected_language,
+                detected_intent=None,
+                message_text=raw_text or f"[{event.message.type} attachment]",
+                analysis_text=None,
+                knowledge_hits=[],
+                status="received",
+            )
+        )
+
+        if event.message.type == "text" and ev_support_service.is_human_handoff_requested(raw_text):
+            session = ev_support_service.activate_human_handoff(
+                session_id=session_id,
+                user_id=event.source.userId,
+                channel="line",
+                language=detected_language,
+                reason="customer_requested_human",
+            )
+            customer_reply = ev_support_service.handoff_reply_text(detected_language)
+            support_alert = ev_support_service.support_group_alert_text(
+                session_id=session_id,
+                user_id=event.source.userId,
+                language=detected_language,
+                customer_text=raw_text,
+                reason="customer_requested_human",
+                media_summary=session.last_media_summary,
+            )
+
+            if config.line_support_group_id:
+                try:
+                    ev_support_service.send_line_push(
+                        LinePushRequest(
+                            to=config.line_support_group_id,
+                            messages=[{"type": "text", "text": support_alert}],
+                        )
+                    )
+                except Exception as exc:
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type="text",
+                            language=detected_language,
+                            detected_intent="human_handoff",
+                            message_text=support_alert,
+                            analysis_text=None,
+                            knowledge_hits=[],
+                            status="support_group_notify_failed",
+                            error_detail=str(exc),
+                        )
+                    )
+                    raise
+
+            if event.replyToken and config.line_channel_access_token:
+                status, body = ev_support_service.send_line_reply(
+                    ev_support_service.build_line_reply_request(
+                        event.replyToken,
+                        type(
+                            "Resp",
+                            (),
+                            {
+                                "reply_text": customer_reply,
+                            },
+                        ),
+                    )
+                )
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type="text",
+                        language=detected_language,
+                        detected_intent="human_handoff",
+                        message_text=customer_reply,
+                        analysis_text=None,
+                        knowledge_hits=[],
+                        status="delivered" if status < 400 else "delivery_failed",
+                        error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                    )
+                )
+                results.append({"status": "human_handoff_started", "reply_text": customer_reply})
+            else:
+                results.append({"status": "human_handoff_started", "reply_text": customer_reply})
+            continue
+
+        if session.human_handoff_active and event.message.type == "text":
+            if config.line_support_group_id:
+                support_alert = ev_support_service.support_group_alert_text(
+                    session_id=session_id,
+                    user_id=event.source.userId,
+                    language=detected_language,
+                    customer_text=raw_text,
+                    reason="handoff_followup",
+                    media_summary=session.last_media_summary,
+                )
+                ev_support_service.send_line_push(
+                    LinePushRequest(
+                        to=config.line_support_group_id,
+                        messages=[{"type": "text", "text": support_alert}],
+                    )
+                )
+
+            followup_reply = ev_support_service.handoff_followup_text(detected_language)
+            if event.replyToken and config.line_channel_access_token:
+                status, body = ev_support_service.send_line_reply(
+                    ev_support_service.build_line_reply_request(
+                        event.replyToken,
+                        type("Resp", (), {"reply_text": followup_reply}),
+                    )
+                )
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type="text",
+                        language=detected_language,
+                        detected_intent="human_handoff_followup",
+                        message_text=followup_reply,
+                        analysis_text=None,
+                        knowledge_hits=[],
+                        status="delivered" if status < 400 else "delivery_failed",
+                        error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                    )
+                )
+            results.append({"status": "human_handoff_active"})
+            continue
+
+        if event.message.type in {"image", "audio"}:
+            try:
+                stored = ev_support_service.fetch_and_store_line_media(
+                    session_id=session_id,
+                    message_id=event.message.id,
+                    message_type=event.message.type,
+                )
+            except Exception as exc:
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type=event.message.type,
+                        language=detected_language,
+                        detected_intent="media_received",
+                        message_text="",
+                        analysis_text=None,
+                        knowledge_hits=[],
+                        status="media_download_failed",
+                        error_detail=str(exc),
+                    )
+                )
+                raise
+
+            analysis_text = ev_support_service.analyze_media(
+                session_id=session_id,
+                user_id=event.source.userId,
+                channel="line",
+                language=detected_language,
+                message_type=event.message.type,
+                file_path=stored.file_path,
+            )
+            response = ev_support_service.build_media_response(
+                session_id=session_id,
+                user_id=event.source.userId,
+                channel="line",
+                language=detected_language,
+                message_type=event.message.type,
+                analysis=analysis_text,
+            )
+
+            if event.replyToken and config.line_channel_access_token:
+                line_payload = ev_support_service.build_line_reply_request(event.replyToken, response)
+                status, body = ev_support_service.send_line_reply(line_payload)
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type=event.message.type,
+                        language=response.detected_language,
+                        detected_intent=response.detected_intent,
+                        message_text=response.reply_text,
+                        analysis_text=analysis_text,
+                        knowledge_hits=[],
+                        status="delivered" if status < 400 else "delivery_failed",
+                        media_path=stored.file_path,
+                        error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                    )
+                )
+                results.append(
+                    {
+                        "status": "media_received",
+                        "http_status": status,
+                        "reply_text": response.reply_text,
+                        "analysis_text": analysis_text,
+                        "media_path": stored.file_path,
+                        "line_response": body,
+                    }
+                )
+            else:
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type=event.message.type,
+                        language=response.detected_language,
+                        detected_intent=response.detected_intent,
+                        message_text=response.reply_text,
+                        analysis_text=analysis_text,
+                        knowledge_hits=[],
+                        status="generated_locally",
+                        media_path=stored.file_path,
+                    )
+                )
+                results.append(
+                    {
+                        "status": "media_received",
+                        "reply_text": response.reply_text,
+                        "analysis_text": analysis_text,
+                        "media_path": stored.file_path,
+                    }
+                )
+            continue
+
+        req = EVSupportRequest(
+            session_id=session_id,
+            user_id=event.source.userId,
+            message_text=raw_text,
+            channel="line",
+            language=detected_language,
+        )
+
+        if config.ev_n8n_webhook_url:
+            status, body = _post_to_ev_n8n_webhook(
+                {
+                    "session_id": session_id,
+                    "user_id": event.source.userId,
+                    "reply_token": event.replyToken,
+                    "message_text": event.message.text,
+                    "language": config.ev_default_language,
+                    "source": "line",
+                    "event_timestamp": event.timestamp,
+                }
+            )
+            repo.log_message(
+                ChatLogRecord(
+                    session_id=session_id,
+                    user_id=event.source.userId,
+                    channel="line",
+                    direction="outbound",
+                    message_type="text",
+                    language=req.language,
+                    detected_intent=None,
+                    message_text=json.dumps(body, ensure_ascii=False),
+                    analysis_text=None,
+                    knowledge_hits=[],
+                    status="forwarded_to_n8n",
+                )
+            )
+            results.append({"status": "forwarded_to_n8n", "http_status": status, "body": body})
+            continue
+
+        response = ev_support_service.generate_reply(req)
+        if event.replyToken and config.line_channel_access_token:
+            line_payload = ev_support_service.build_line_reply_request(event.replyToken, response)
+            try:
+                status, body = ev_support_service.send_line_reply(line_payload)
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type="text",
+                        language=response.detected_language,
+                        detected_intent=response.detected_intent,
+                        message_text=response.reply_text,
+                        analysis_text=None,
+                        knowledge_hits=response.knowledge_hits,
+                        status="delivered" if status < 400 else "delivery_failed",
+                        error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                    )
+                )
+                results.append(
+                    {
+                        "status": "replied_via_line",
+                        "http_status": status,
+                        "reply_text": response.reply_text,
+                        "line_response": body,
+                    }
+                )
+            except Exception as exc:
+                repo.log_message(
+                    ChatLogRecord(
+                        session_id=session_id,
+                        user_id=event.source.userId,
+                        channel="line",
+                        direction="outbound",
+                        message_type="text",
+                        language=response.detected_language,
+                        detected_intent=response.detected_intent,
+                        message_text=response.reply_text,
+                        analysis_text=None,
+                        knowledge_hits=response.knowledge_hits,
+                        status="delivery_failed",
+                        error_detail=str(exc),
+                    )
+                )
+                raise
+        else:
+            repo.log_message(
+                ChatLogRecord(
+                    session_id=session_id,
+                    user_id=event.source.userId,
+                    channel="line",
+                    direction="outbound",
+                    message_type="text",
+                    language=response.detected_language,
+                    detected_intent=response.detected_intent,
+                    message_text=response.reply_text,
+                    analysis_text=None,
+                    knowledge_hits=response.knowledge_hits,
+                    status="generated_locally",
+                )
+            )
+            results.append(
+                {
+                    "status": "generated_locally",
+                    "reply_text": response.reply_text,
+                    "detected_intent": response.detected_intent,
+                }
+            )
+
+    return {"ok": True, "results": results}
 
 
 @router.get("/google/status")
@@ -163,6 +752,7 @@ def google_callback(code: str, state: str | None = None) -> HTMLResponse:
 
 @router.post("/cases/intake", dependencies=[Depends(require_api_key)])
 def intake(req: IntakeRequest) -> dict:
+    service = get_service()
     result = service.intake_and_orchestrate(req)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"].model_dump(mode="json"))
@@ -177,11 +767,13 @@ def intake(req: IntakeRequest) -> dict:
 
 @router.get("/cases", dependencies=[Depends(require_api_key)])
 def list_cases() -> list[dict]:
+    service = get_service()
     return [c.model_dump() for c in service.repo.list_all()]
 
 
 @router.get("/cases/{case_id}", dependencies=[Depends(require_api_key)])
 def get_case(case_id: str) -> dict:
+    service = get_service()
     case = service.repo.get(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -190,6 +782,7 @@ def get_case(case_id: str) -> dict:
 
 @router.get("/cases/{case_id}/presentation", response_class=HTMLResponse, dependencies=[Depends(require_api_key)])
 def get_case_presentation(case_id: str) -> HTMLResponse:
+    service = get_service()
     case = service.repo.get(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -428,6 +1021,7 @@ def get_case_presentation(case_id: str) -> HTMLResponse:
 
 @router.get("/cases/{case_id}/proposal.pdf", dependencies=[Depends(require_api_key)])
 def get_case_proposal_pdf(case_id: str) -> Response:
+    service = get_service()
     case = service.repo.get(case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -449,6 +1043,7 @@ def get_case_proposal_pdf(case_id: str) -> Response:
 
 @router.post("/cases/{case_id}/review", dependencies=[Depends(require_api_key)])
 def review_case(case_id: str, decision: ReviewDecision) -> dict:
+    service = get_service()
     try:
         case = service.review_case(case_id, decision)
     except ValueError as exc:

@@ -1,0 +1,189 @@
+{
+  "name": "EV LINE Support - Thai Customer Service",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ev-line-support",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "id": "Webhook_EV_LINE",
+      "name": "Webhook EV LINE",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\nreturn [{ json: {\n  session_id: b.session_id,\n  user_id: b.user_id,\n  message_text: b.message_text,\n  channel: b.source || 'line',\n  language: b.language || 'th-TH',\n  reply_token: b.reply_token,\n  context: b.context || {},\n  event_timestamp: b.event_timestamp\n}}];"
+      },
+      "id": "Normalize_Line_Event",
+      "name": "Normalize Line Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_BASE_URL}}/api/ev-support/respond",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { session_id: $json.session_id, user_id: $json.user_id, message_text: $json.message_text, channel: $json.channel, language: $json.language, context: $json.context } }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "Generate_Thai_Reply",
+      "name": "Generate Thai Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $items('Normalize Line Event', 0, 0)[0].json;\nconst reply = $json.reply_text;\nreturn [{ json: {\n  replyToken: input.reply_token,\n  messages: [{ type: 'text', text: reply }],\n  detected_intent: $json.detected_intent,\n  escalate_to_human: $json.escalate_to_human,\n  reply_text: reply,\n  session_id: $json.session_id,\n  user_id: $json.user_id\n}}];"
+      },
+      "id": "Build_LINE_Payload",
+      "name": "Build LINE Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.replyToken}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "Has_Reply_Token",
+      "name": "Has Reply Token",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1240, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.LINE_CHANNEL_ACCESS_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { replyToken: $json.replyToken, messages: $json.messages } }}"
+      },
+      "id": "Reply_to_LINE",
+      "name": "Reply to LINE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1490, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, detected_intent: $json.detected_intent, escalate_to_human: $json.escalate_to_human, reply_text: $json.reply_text, session_id: $json.session_id, user_id: $json.user_id } }}"
+      },
+      "id": "Webhook_Response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [1750, 260]
+    }
+  ],
+  "connections": {
+    "Webhook EV LINE": {
+      "main": [
+        [
+          {
+            "node": "Normalize Line Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Line Event": {
+      "main": [
+        [
+          {
+            "node": "Generate Thai Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Thai Reply": {
+      "main": [
+        [
+          {
+            "node": "Build LINE Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build LINE Payload": {
+      "main": [
+        [
+          {
+            "node": "Has Reply Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Reply Token": {
+      "main": [
+        [
+          {
+            "node": "Reply to LINE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply to LINE": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "versionId": "1"
+}

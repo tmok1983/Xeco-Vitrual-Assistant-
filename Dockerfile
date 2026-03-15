@@ -8,7 +8,11 @@ WORKDIR /app
 
 COPY pyproject.toml /app/pyproject.toml
 COPY app /app/app
+COPY data /app/data
 COPY prompts /app/prompts
+COPY docs /app/docs
+COPY n8n /app/n8n
+COPY scripts /app/scripts
 
 RUN pip install --upgrade pip && pip install .
 
