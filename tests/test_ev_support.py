@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.api import routes
+from app.ev_support.faq_store import LocalFAQRetriever
 from app.ev_support.models import EVSupportRequest
 
 
@@ -43,7 +44,7 @@ def test_ev_support_respond_returns_thai_reply() -> None:
         assert response.status_code == 200
         payload = response.json()
         assert payload["detected_intent"] == "start_charge"
-        assert "charging" in payload["reply_text"].lower()
+        assert "ชาร์จ" in payload["reply_text"]
         assert payload["knowledge_hits"]
 
         logs = client.get("/api/ev-support/logs", params={"key": routes.config.api_auth_key or ""})
@@ -127,7 +128,7 @@ def test_line_webhook_generates_local_reply_without_token() -> None:
         assert payload["ok"] is True
         assert payload["results"][0]["status"] == "generated_locally"
         assert payload["results"][0]["detected_intent"] == "refund"
-        assert "station id" in payload["results"][0]["reply_text"].lower()
+        assert "เงินคืน" in payload["results"][0]["reply_text"]
 
 
 def test_line_webhook_validates_signature_when_secret_is_set() -> None:
@@ -159,3 +160,12 @@ def test_line_webhook_validates_signature_when_secret_is_set() -> None:
         headers={"X-Line-Signature": "bad-signature", "Content-Type": "application/json"},
     )
     assert bad_response.status_code == 401
+
+
+def test_thai_faq_retrieval_matches_station_location_variants() -> None:
+    retriever = LocalFAQRetriever("data/xeco_faq_corpus.json")
+
+    hits = retriever.retrieve("สถานีชาร์จอยู่ที่ไหน", language="th-TH", top_k=3)
+
+    assert hits
+    assert hits[0].entry.doc_id == "faq-018-charging-locations-th"
