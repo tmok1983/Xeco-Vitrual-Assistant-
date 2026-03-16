@@ -226,6 +226,18 @@ def ev_support_respond(req: EVSupportRequest) -> dict:
     return response.model_dump(mode="json")
 
 
+@router.post("/ev-support/debug/respond", dependencies=[Depends(require_api_key)])
+def ev_support_debug_respond(req: EVSupportRequest) -> dict:
+    service = get_ev_support_service()
+    detected_language = service.detect_language(req.message_text, req.language)
+    response = service.generate_reply(req)
+    return {
+        "request": req.model_dump(mode="json"),
+        "detected_language_before_reply": detected_language,
+        "response": response.model_dump(mode="json"),
+    }
+
+
 @router.get("/ev-support/logs", dependencies=[Depends(require_api_key)])
 def ev_support_logs(limit: int = Query(default=100, ge=1, le=500), session_id: str | None = None) -> dict:
     rows = get_chat_log_repository().list_messages(limit=limit, session_id=session_id)
@@ -548,6 +560,59 @@ async def ev_support_line_webhook(
             continue
 
         if session.human_handoff_active and event.message.type == "text":
+            if ev_support_service.is_customer_handoff_close_request(raw_text):
+                closed_session = ev_support_service.close_human_handoff(session_id)
+                resumed_reply = ev_support_service.bot_resumed_customer_text(detected_language)
+
+                if event.replyToken and config.line_channel_access_token:
+                    status, body = ev_support_service.send_line_reply(
+                        ev_support_service.build_line_reply_request(
+                            event.replyToken,
+                            type("Resp", (), {"reply_text": resumed_reply}),
+                        )
+                    )
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type="text",
+                            language=detected_language,
+                            detected_intent="human_handoff_closed",
+                            message_text=resumed_reply,
+                            analysis_text=None,
+                            knowledge_hits=[],
+                            status="delivered" if status < 400 else "delivery_failed",
+                            error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                        )
+                    )
+                else:
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type="text",
+                            language=detected_language,
+                            detected_intent="human_handoff_closed",
+                            message_text=resumed_reply,
+                            analysis_text=None,
+                            knowledge_hits=[],
+                            status="generated_locally",
+                        )
+                    )
+
+                results.append(
+                    {
+                        "status": "human_handoff_closed",
+                        "session_id": closed_session.session_id if closed_session else session_id,
+                        "reply_text": resumed_reply,
+                    }
+                )
+                continue
+
             if config.line_support_group_id:
                 support_alert = ev_support_service.support_group_alert_text(
                     session_id=session_id,
@@ -725,7 +790,7 @@ async def ev_support_line_webhook(
                     "user_id": event.source.userId,
                     "reply_token": event.replyToken,
                     "message_text": event.message.text,
-                    "language": config.ev_default_language,
+                    "language": detected_language,
                     "source": "line",
                     "event_timestamp": event.timestamp,
                 }

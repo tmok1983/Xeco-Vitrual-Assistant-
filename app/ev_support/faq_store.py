@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-# Thai and Chinese are tokenized at character level for better lexical matching
-# across phrasing variants that may not use consistent word boundaries.
-TOKEN_RE = re.compile(r"[a-z0-9]+|[\u0E00-\u0E7F]|[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]", re.IGNORECASE)
+# Thai and CJK runs are expanded into overlapping n-grams so retrieval can
+# match phrasing variants without over-weighting single-character overlap.
+TOKEN_RE = re.compile(r"[a-z0-9]+|[\u0E00-\u0E7F]+|[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]+", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -53,12 +53,26 @@ class LocalFAQRetriever:
 
     def _tokenize(self, text: str) -> set[str]:
         raw_tokens = TOKEN_RE.findall(text.lower())
-        tokens: set[str] = set(raw_tokens)
-        # Lightweight normalization for English plurality variants
-        # (station/stations, charger/chargers).
+        tokens: set[str] = set()
         for token in raw_tokens:
             if token.isascii() and token.isalpha() and len(token) > 3 and token.endswith("s"):
                 tokens.add(token[:-1])
+                tokens.add(token)
+                continue
+
+            if token.isascii():
+                tokens.add(token)
+                continue
+
+            if len(token) == 1:
+                tokens.add(token)
+                continue
+
+            tokens.add(token)
+            max_n = min(4, len(token))
+            for size in range(2, max_n + 1):
+                for idx in range(0, len(token) - size + 1):
+                    tokens.add(token[idx : idx + size])
         return tokens
 
     def _score_entry(self, query_lower: str, query_tokens: set[str], entry: FAQEntry) -> int:

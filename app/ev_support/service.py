@@ -161,16 +161,20 @@ class EVSupportService:
         lowered = text.lower()
         if any(token in text for token in ["ควัน", "ไหม้", "ไฟช็อต", "ร้อนผิดปกติ"]):
             return "emergency"
-        if any(token in text for token in ["充電站", "哪裡", "在哪里", "喺邊"]):
+        if any(token in text for token in ["充電站", "哪裡", "在哪里", "喺邊", "邊度", "附近充電", "充電地方"]):
             return "charging_locations"
         if any(token in text for token in ["สถานีชาร์จ", "ใกล้ฉัน", "อยู่ที่ไหน"]):
             return "charging_locations"
         if any(phrase in lowered for phrase in ["charging station", "charging stations", "nearest station", "nearby station"]):
             return "charging_locations"
+        if any(token in text for token in ["退款", "退錢", "已扣款", "扣款", "未成功充電", "扣咗錢", "收咗錢"]):
+            return "refund"
         if any(phrase in lowered for phrase in ["charged but", "payment failed", "refund", "billing", "card charged"]):
             return "refund"
         if any(token in text for token in ["คืนเงิน", "refund", "ตัดเงิน", "ชำระเงิน", "payment"]):
             return "refund"
+        if any(token in text for token in ["充唔到電", "充不到電", "無法充電", "掃 code", "掃code", "掃 qr", "掃qr"]):
+            return "start_charge"
         if any(token in text for token in ["เริ่มชาร์จ", "start", "สแกน", "qr"]):
             return "start_charge"
         if any(token in text for token in ["ราคา", "ค่าบริการ", "โปร", "promotion", "ราคาเท่าไร"]):
@@ -208,17 +212,27 @@ class EVSupportService:
             return FAQ_KNOWLEDGE_ZH
         return FAQ_KNOWLEDGE_EN
 
-    def _retrieve_faq_context(self, message_text: str, language: str) -> tuple[str, list[str], str | None, str | None]:
+    def _retrieve_faq_context(self, message_text: str, language: str) -> tuple[str, list[str], str | None, str | None, int]:
         hits = self.faq_retriever.retrieve(message_text, language=language, top_k=3)
         if not hits:
-            return "", [], None, None
+            return "", [], None, None, 0
 
         context_lines = []
         hit_ids: list[str] = []
         for hit in hits:
             context_lines.append(f"- Q: {hit.entry.question}\n  A: {hit.entry.answer}")
             hit_ids.append(hit.entry.doc_id)
-        return "\n".join(context_lines), hit_ids, hits[0].entry.answer, hits[0].entry.intent
+        return "\n".join(context_lines), hit_ids, hits[0].entry.answer, hits[0].entry.intent, hits[0].score
+
+    def _should_reply_from_faq(self, intent: str, top_faq_intent: str | None, top_faq_score: int) -> bool:
+        if not top_faq_intent:
+            return False
+        if intent == "general_support":
+            return top_faq_score >= 18
+        expected_faq_intents = INTENT_TO_FAQ_INTENTS.get(intent)
+        if not expected_faq_intents:
+            return False
+        return top_faq_intent in expected_faq_intents
 
     def _load_or_create_session(self, session_id: str, user_id: str, channel: str, language: str) -> EVSupportSession:
         session = self.repo.get(session_id)
@@ -298,6 +312,10 @@ class EVSupportService:
         if match:
             return match.group(1)
         return None
+
+    def is_customer_handoff_close_request(self, text: str) -> bool:
+        lowered = text.lower().strip()
+        return any(pattern in lowered or pattern in text for pattern in HANDOFF_CLOSE_PATTERNS)
 
     def support_group_alert_text(
         self,
@@ -415,7 +433,7 @@ class EVSupportService:
         if session.last_media_summary:
             retrieval_query = f"{req.message_text}\nMedia context: {session.last_media_summary}"
 
-        faq_context, faq_hit_ids, top_faq_answer, top_faq_intent = self._retrieve_faq_context(retrieval_query, language)
+        faq_context, faq_hit_ids, top_faq_answer, top_faq_intent, top_faq_score = self._retrieve_faq_context(retrieval_query, language)
         if intent in INTENT_TO_FAQ_INTENTS:
             intent_hits = self.faq_retriever.retrieve_by_intents(
                 retrieval_query,
@@ -431,6 +449,8 @@ class EVSupportService:
                 faq_context = "\n".join(f"- Q: {hit.entry.question}\n  A: {hit.entry.answer}" for hit in intent_hits)
                 faq_hit_ids = [hit.entry.doc_id for hit in intent_hits]
                 top_faq_answer = intent_hits[0].entry.answer
+                top_faq_intent = intent_hits[0].entry.intent
+                top_faq_score = intent_hits[0].score
         knowledge = knowledge_map.get(
             intent,
             "ให้สอบถามข้อมูลเพิ่มเติมอย่างสุภาพและสรุปขั้นตอนถัดไป"
@@ -442,9 +462,10 @@ class EVSupportService:
         if session.last_media_summary:
             knowledge = f"{knowledge}\n\nRecent media summary:\n{session.last_media_summary}"
         session.messages.append(EVSupportMessage(role="user", text=req.message_text, at=now))
+        trusted_faq = self._should_reply_from_faq(intent, top_faq_intent, top_faq_score)
 
-        # FAQ-first mode: if we found a matching FAQ, answer directly from corpus.
-        if top_faq_answer:
+        # FAQ-first mode: answer directly only when the FAQ hit matches the detected intent.
+        if top_faq_answer and trusted_faq:
             reply_text = top_faq_answer
             session.messages.append(EVSupportMessage(role="assistant", text=reply_text, at=now))
             session.last_intent = intent
@@ -466,7 +487,12 @@ class EVSupportService:
             raw_reply = self.llm.complete(prompt).strip()
 
         if not raw_reply or raw_reply.startswith("[MOCK_LLM]") or raw_reply.startswith("[LLM_FALLBACK:"):
-            reply_text = self._fallback_reply(intent, req.message_text, language, retrieved_answer=top_faq_answer)
+            reply_text = self._fallback_reply(
+                intent,
+                req.message_text,
+                language,
+                retrieved_answer=top_faq_answer if trusted_faq else None,
+            )
         else:
             reply_text = raw_reply
 
@@ -482,7 +508,7 @@ class EVSupportService:
             detected_intent=intent,
             reply_text=reply_text,
             escalate_to_human=intent == "emergency" or "เจ้าหน้าที่" in req.message_text,
-            knowledge_hits=faq_hit_ids or ([intent] if intent in FAQ_KNOWLEDGE else []),
+            knowledge_hits=faq_hit_ids if trusted_faq else ([intent] if intent in knowledge_map else []),
         )
 
     def analyze_media(self, session_id: str, user_id: str, channel: str, language: str, message_type: str, file_path: str) -> str:
