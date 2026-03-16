@@ -128,7 +128,7 @@ def test_line_webhook_generates_local_reply_without_token() -> None:
         assert payload["ok"] is True
         assert payload["results"][0]["status"] == "generated_locally"
         assert payload["results"][0]["detected_intent"] == "refund"
-        assert "เงินคืน" in payload["results"][0]["reply_text"]
+        assert "คืนเงิน" in payload["results"][0]["reply_text"]
 
 
 def test_line_webhook_validates_signature_when_secret_is_set() -> None:
@@ -169,3 +169,26 @@ def test_thai_faq_retrieval_matches_station_location_variants() -> None:
 
     assert hits
     assert hits[0].entry.doc_id == "faq-018-charging-locations-th"
+
+
+def test_ev_support_respond_grounds_station_lookup_to_faq() -> None:
+    _configure_test_settings(
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+    response = client.post(
+        "/api/ev-support/respond",
+        json=EVSupportRequest(
+            session_id="line:Ustation",
+            user_id="Ustation",
+            message_text="Where is the nearest charging station?",
+            channel="line",
+            language="en-US",
+        ).model_dump(mode="json"),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["knowledge_hits"]
+    assert payload["knowledge_hits"][0] == "faq-018-charging-locations-en"
+    assert "official website" in payload["reply_text"].lower()

@@ -18,6 +18,7 @@ class FAQEntry:
     question: str
     answer: str
     tags: list[str]
+    intent: str | None = None
 
 
 @dataclass(frozen=True)
@@ -45,38 +46,72 @@ class LocalFAQRetriever:
                     question=item["question"],
                     answer=item["answer"],
                     tags=item.get("tags", []),
+                    intent=item.get("intent"),
                 )
             )
         return entries
 
+    def _tokenize(self, text: str) -> set[str]:
+        raw_tokens = TOKEN_RE.findall(text.lower())
+        tokens: set[str] = set(raw_tokens)
+        # Lightweight normalization for English plurality variants
+        # (station/stations, charger/chargers).
+        for token in raw_tokens:
+            if token.isascii() and token.isalpha() and len(token) > 3 and token.endswith("s"):
+                tokens.add(token[:-1])
+        return tokens
+
+    def _score_entry(self, query_lower: str, query_tokens: set[str], entry: FAQEntry) -> int:
+        question_lower = entry.question.lower()
+        answer_lower = entry.answer.lower()
+        tags_lower = " ".join(entry.tags).lower()
+
+        question_tokens = self._tokenize(question_lower)
+        answer_tokens = self._tokenize(answer_lower)
+        tag_tokens = self._tokenize(tags_lower)
+
+        score = 0
+        score += 3 * len(query_tokens & question_tokens)
+        score += 1 * len(query_tokens & answer_tokens)
+        score += 2 * len(query_tokens & tag_tokens)
+
+        if query_lower and query_lower in question_lower:
+            score += 8
+        elif question_lower and question_lower in query_lower:
+            score += 5
+        return score
+
     def retrieve(self, query: str, language: str, top_k: int = 3) -> list[FAQHit]:
         query_lower = query.lower()
-        query_tokens = set(TOKEN_RE.findall(query_lower))
+        query_tokens = self._tokenize(query_lower)
         hits: list[FAQHit] = []
 
         for entry in self.entries:
             if entry.language != language:
                 continue
-            question_lower = entry.question.lower()
-            answer_lower = entry.answer.lower()
-            tags_lower = " ".join(entry.tags).lower()
-
-            question_tokens = set(TOKEN_RE.findall(question_lower))
-            answer_tokens = set(TOKEN_RE.findall(answer_lower))
-            tag_tokens = set(TOKEN_RE.findall(tags_lower))
-
-            score = 0
-            score += 3 * len(query_tokens & question_tokens)
-            score += 1 * len(query_tokens & answer_tokens)
-            score += 2 * len(query_tokens & tag_tokens)
-
-            if query_lower and query_lower in question_lower:
-                score += 8
-            elif question_lower and question_lower in query_lower:
-                score += 5
+            score = self._score_entry(query_lower, query_tokens, entry)
 
             if score > 0:
                 hits.append(FAQHit(entry=entry, score=score))
+
+        hits.sort(key=lambda hit: (-hit.score, hit.entry.doc_id))
+        return hits[:top_k]
+
+    def retrieve_by_intents(self, query: str, language: str, intents: list[str], top_k: int = 3) -> list[FAQHit]:
+        if not intents:
+            return []
+        intent_set = set(intents)
+        query_lower = query.lower()
+        query_tokens = self._tokenize(query_lower)
+        hits: list[FAQHit] = []
+
+        for entry in self.entries:
+            if entry.language != language or entry.intent not in intent_set:
+                continue
+            score = self._score_entry(query_lower, query_tokens, entry)
+            if score <= 0:
+                score = 1
+            hits.append(FAQHit(entry=entry, score=score))
 
         hits.sort(key=lambda hit: (-hit.score, hit.entry.doc_id))
         return hits[:top_k]

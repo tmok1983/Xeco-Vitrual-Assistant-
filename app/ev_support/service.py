@@ -133,6 +133,14 @@ HANDOFF_CLOSE_PATTERNS = [
     "กลับสู่บอท",
 ]
 
+INTENT_TO_FAQ_INTENTS = {
+    "start_charge": ["charging_not_starting", "charging_started"],
+    "connector_issue": ["charging_cable_locked", "manual_release", "charging_not_starting"],
+    "refund": ["refund_request"],
+    "emergency": ["safety_requirements", "emergency_stop_limit"],
+    "charging_locations": ["charging_locations"],
+}
+
 
 class EVSupportService:
     def __init__(
@@ -153,6 +161,12 @@ class EVSupportService:
         lowered = text.lower()
         if any(token in text for token in ["ควัน", "ไหม้", "ไฟช็อต", "ร้อนผิดปกติ"]):
             return "emergency"
+        if any(token in text for token in ["充電站", "哪裡", "在哪里", "喺邊"]):
+            return "charging_locations"
+        if any(token in text for token in ["สถานีชาร์จ", "ใกล้ฉัน", "อยู่ที่ไหน"]):
+            return "charging_locations"
+        if any(phrase in lowered for phrase in ["charging station", "charging stations", "nearest station", "nearby station"]):
+            return "charging_locations"
         if any(phrase in lowered for phrase in ["charged but", "payment failed", "refund", "billing", "card charged"]):
             return "refund"
         if any(token in text for token in ["คืนเงิน", "refund", "ตัดเงิน", "ชำระเงิน", "payment"]):
@@ -194,17 +208,17 @@ class EVSupportService:
             return FAQ_KNOWLEDGE_ZH
         return FAQ_KNOWLEDGE_EN
 
-    def _retrieve_faq_context(self, message_text: str, language: str) -> tuple[str, list[str], str | None]:
+    def _retrieve_faq_context(self, message_text: str, language: str) -> tuple[str, list[str], str | None, str | None]:
         hits = self.faq_retriever.retrieve(message_text, language=language, top_k=3)
         if not hits:
-            return "", [], None
+            return "", [], None, None
 
         context_lines = []
         hit_ids: list[str] = []
         for hit in hits:
             context_lines.append(f"- Q: {hit.entry.question}\n  A: {hit.entry.answer}")
             hit_ids.append(hit.entry.doc_id)
-        return "\n".join(context_lines), hit_ids, hits[0].entry.answer
+        return "\n".join(context_lines), hit_ids, hits[0].entry.answer, hits[0].entry.intent
 
     def _load_or_create_session(self, session_id: str, user_id: str, channel: str, language: str) -> EVSupportSession:
         session = self.repo.get(session_id)
@@ -401,7 +415,22 @@ class EVSupportService:
         if session.last_media_summary:
             retrieval_query = f"{req.message_text}\nMedia context: {session.last_media_summary}"
 
-        faq_context, faq_hit_ids, top_faq_answer = self._retrieve_faq_context(retrieval_query, language)
+        faq_context, faq_hit_ids, top_faq_answer, top_faq_intent = self._retrieve_faq_context(retrieval_query, language)
+        if intent in INTENT_TO_FAQ_INTENTS:
+            intent_hits = self.faq_retriever.retrieve_by_intents(
+                retrieval_query,
+                language=language,
+                intents=INTENT_TO_FAQ_INTENTS[intent],
+                top_k=3,
+            )
+            should_use_intent_hits = (
+                not top_faq_answer
+                or top_faq_intent not in INTENT_TO_FAQ_INTENTS[intent]
+            )
+            if intent_hits and should_use_intent_hits:
+                faq_context = "\n".join(f"- Q: {hit.entry.question}\n  A: {hit.entry.answer}" for hit in intent_hits)
+                faq_hit_ids = [hit.entry.doc_id for hit in intent_hits]
+                top_faq_answer = intent_hits[0].entry.answer
         knowledge = knowledge_map.get(
             intent,
             "ให้สอบถามข้อมูลเพิ่มเติมอย่างสุภาพและสรุปขั้นตอนถัดไป"
