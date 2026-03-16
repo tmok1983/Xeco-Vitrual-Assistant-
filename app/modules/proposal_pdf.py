@@ -2,15 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Frame, Paragraph, SimpleDocTemplate
+from typing import Any
 
 from app.core.models import CaseData
 
@@ -23,22 +15,54 @@ _FONT_CANDIDATES = (
 )
 
 
-def _register_cjk_font() -> str:
+def _load_reportlab() -> dict[str, Any]:
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.platypus import Frame, Paragraph, SimpleDocTemplate
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("reportlab is not installed") from exc
+
+    return {
+        "colors": colors,
+        "TA_CENTER": TA_CENTER,
+        "TA_LEFT": TA_LEFT,
+        "A4": A4,
+        "landscape": landscape,
+        "ParagraphStyle": ParagraphStyle,
+        "getSampleStyleSheet": getSampleStyleSheet,
+        "mm": mm,
+        "pdfmetrics": pdfmetrics,
+        "TTFont": TTFont,
+        "Frame": Frame,
+        "Paragraph": Paragraph,
+        "SimpleDocTemplate": SimpleDocTemplate,
+    }
+
+
+def _register_cjk_font(rl: dict[str, Any]) -> str:
     global _FONT_REGISTERED
     if _FONT_REGISTERED:
         return _FONT_NAME
 
     for font_path in _FONT_CANDIDATES:
         if Path(font_path).exists():
-            pdfmetrics.registerFont(TTFont(_FONT_NAME, font_path, subfontIndex=0))
+            rl["pdfmetrics"].registerFont(rl["TTFont"](_FONT_NAME, font_path, subfontIndex=0))
             _FONT_REGISTERED = True
             return _FONT_NAME
 
     raise FileNotFoundError("No supported CJK system font found for PDF generation")
 
 
-def _build_styles(font_name: str) -> dict[str, ParagraphStyle]:
-    base = getSampleStyleSheet()
+def _build_styles(font_name: str, rl: dict[str, Any]) -> dict[str, Any]:
+    base = rl["getSampleStyleSheet"]()
+    ParagraphStyle = rl["ParagraphStyle"]
+    colors = rl["colors"]
     return {
         "section": ParagraphStyle(
             "section",
@@ -47,7 +71,7 @@ def _build_styles(font_name: str) -> dict[str, ParagraphStyle]:
             fontSize=9,
             leading=11,
             textColor=colors.HexColor("#B45309"),
-            alignment=TA_LEFT,
+            alignment=rl["TA_LEFT"],
         ),
         "title": ParagraphStyle(
             "title",
@@ -96,7 +120,7 @@ def _build_styles(font_name: str) -> dict[str, ParagraphStyle]:
             fontSize=28,
             leading=30,
             textColor=colors.HexColor("#B45309"),
-            alignment=TA_CENTER,
+            alignment=rl["TA_CENTER"],
         ),
     }
 
@@ -112,8 +136,17 @@ def build_proposal_pdf(case: CaseData) -> bytes:
     if not case.presentation_result or not case.presentation_result.pages:
         raise ValueError("Presentation not found for this case")
 
-    font_name = _register_cjk_font()
-    styles = _build_styles(font_name)
+    rl = _load_reportlab()
+    Paragraph = rl["Paragraph"]
+    Frame = rl["Frame"]
+    SimpleDocTemplate = rl["SimpleDocTemplate"]
+    colors = rl["colors"]
+    mm = rl["mm"]
+    landscape = rl["landscape"]
+    A4 = rl["A4"]
+
+    font_name = _register_cjk_font(rl)
+    styles = _build_styles(font_name, rl)
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
