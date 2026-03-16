@@ -110,6 +110,8 @@ HUMAN_HANDOFF_PATTERNS = [
     "customer support",
     "talk to human",
     "need human",
+    "customer service",
+    "cs team",
     "真人",
     "人工",
     "客服",
@@ -222,6 +224,8 @@ class EVSupportService:
 
     def is_human_handoff_requested(self, text: str) -> bool:
         lowered = text.lower()
+        if re.search(r"(^|\W)cs(\W|$)", lowered):
+            return True
         return any(pattern in lowered or pattern in text for pattern in HUMAN_HANDOFF_PATTERNS)
 
     def activate_human_handoff(self, session_id: str, user_id: str, channel: str, language: str, reason: str) -> EVSupportSession:
@@ -333,11 +337,7 @@ class EVSupportService:
 
     def _fallback_reply(self, intent: str, message_text: str, language: str, retrieved_answer: str | None = None) -> str:
         if retrieved_answer:
-            if language.startswith("zh"):
-                return f"{retrieved_answer}\n如方便，請再提供站點編號或截圖，我可以幫你確認下一步。"
-            if language.startswith("th"):
-                return f"{retrieved_answer}\nหากสะดวก ส่งหมายเลขสถานีหรือภาพหน้าจอมาได้ ผมจะช่วยตรวจสอบต่อให้ครับ"
-            return f"{retrieved_answer}\nIf possible, send the station ID or a screenshot and I will help you check the next step."
+            return retrieved_answer
         if language.startswith("zh"):
             if intent == "emergency":
                 return (
@@ -413,6 +413,23 @@ class EVSupportService:
         if session.last_media_summary:
             knowledge = f"{knowledge}\n\nRecent media summary:\n{session.last_media_summary}"
         session.messages.append(EVSupportMessage(role="user", text=req.message_text, at=now))
+
+        # FAQ-first mode: if we found a matching FAQ, answer directly from corpus.
+        if top_faq_answer:
+            reply_text = top_faq_answer
+            session.messages.append(EVSupportMessage(role="assistant", text=reply_text, at=now))
+            session.last_intent = intent
+            session.last_station_id = req.context.station_id
+            self.repo.save(session)
+            return EVSupportResponse(
+                session_id=req.session_id,
+                user_id=req.user_id,
+                detected_language=language,
+                detected_intent=intent,
+                reply_text=reply_text,
+                escalate_to_human=False,
+                knowledge_hits=faq_hit_ids,
+            )
 
         raw_reply = ""
         if intent not in knowledge_map and self.config.llm_provider != "mock":

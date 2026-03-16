@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+from html import escape
 import json
 import ssl
 from functools import lru_cache
@@ -231,6 +232,95 @@ def ev_support_logs(limit: int = Query(default=100, ge=1, le=500), session_id: s
     return {"items": rows, "count": len(rows)}
 
 
+@router.get("/ev-support/logs/view", response_class=HTMLResponse, dependencies=[Depends(require_api_key)])
+def ev_support_logs_view(
+    limit: int = Query(default=100, ge=1, le=500),
+    session_id: str | None = None,
+    key: str | None = Query(default=None),
+) -> HTMLResponse:
+    rows = get_chat_log_repository().list_messages(limit=limit, session_id=session_id)
+
+    table_rows: list[str] = []
+    for row in rows:
+        message_text = escape((row.get("message_text") or "").replace("\n", " "))
+        analysis_text = escape((row.get("analysis_text") or "").replace("\n", " "))
+        table_rows.append(
+            "<tr>"
+            f"<td>{row.get('id', '')}</td>"
+            f"<td>{escape(str(row.get('created_at', '')))}</td>"
+            f"<td>{escape(str(row.get('session_id', '')))}</td>"
+            f"<td>{escape(str(row.get('direction', '')))}</td>"
+            f"<td>{escape(str(row.get('message_type', '')))}</td>"
+            f"<td>{escape(str(row.get('language', '')))}</td>"
+            f"<td>{escape(str(row.get('status', '')))}</td>"
+            f"<td>{escape(str(row.get('detected_intent', '') or ''))}</td>"
+            f"<td title=\"{message_text}\">{message_text[:180]}</td>"
+            f"<td title=\"{analysis_text}\">{analysis_text[:180]}</td>"
+            "</tr>"
+        )
+
+    rows_html = "".join(table_rows) or "<tr><td colspan='10'>No logs found.</td></tr>"
+    session_value = escape(session_id or "")
+    key_value = escape(key or "")
+    html_doc = f"""
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>EV Support Logs</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; margin: 24px; color: #111; }}
+    h1 {{ margin: 0 0 16px; }}
+    form {{ display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 16px; }}
+    label {{ display: flex; flex-direction: column; gap: 6px; font-size: 13px; }}
+    input {{ padding: 8px; min-width: 220px; }}
+    button {{ padding: 9px 14px; cursor: pointer; }}
+    table {{ border-collapse: collapse; width: 100%; font-size: 13px; }}
+    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }}
+    th {{ background: #f5f5f5; position: sticky; top: 0; }}
+    .meta {{ margin-bottom: 12px; color: #666; font-size: 12px; }}
+  </style>
+</head>
+<body>
+  <h1>EV Support Conversation Logs</h1>
+  <div class="meta">Showing {len(rows)} rows</div>
+  <form method="get" action="/api/ev-support/logs/view">
+    <label>Limit
+      <input type="number" name="limit" min="1" max="500" value="{limit}" />
+    </label>
+    <label>Session ID
+      <input type="text" name="session_id" value="{session_value}" placeholder="line:Uxxxx" />
+    </label>
+    <label>API Key
+      <input type="text" name="key" value="{key_value}" placeholder="required if API_AUTH_KEY is set" />
+    </label>
+    <button type="submit">Refresh</button>
+  </form>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Created At</th>
+        <th>Session ID</th>
+        <th>Direction</th>
+        <th>Type</th>
+        <th>Language</th>
+        <th>Status</th>
+        <th>Intent</th>
+        <th>Message</th>
+        <th>Analysis</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows_html}
+    </tbody>
+  </table>
+</body>
+</html>
+"""
+    return HTMLResponse(content=html_doc)
+
+
 @router.post("/ev-support/line/webhook")
 async def ev_support_line_webhook(
     request_: Request,
@@ -421,7 +511,7 @@ async def ev_support_line_webhook(
                             error_detail=str(exc),
                         )
                     )
-                    raise
+                    results.append({"status": "support_group_notify_failed", "error": str(exc)})
 
             if event.replyToken and config.line_channel_access_token:
                 status, body = ev_support_service.send_line_reply(
@@ -467,12 +557,31 @@ async def ev_support_line_webhook(
                     reason="handoff_followup",
                     media_summary=session.last_media_summary,
                 )
-                ev_support_service.send_line_push(
-                    LinePushRequest(
-                        to=config.line_support_group_id,
-                        messages=[{"type": "text", "text": support_alert}],
+                try:
+                    ev_support_service.send_line_push(
+                        LinePushRequest(
+                            to=config.line_support_group_id,
+                            messages=[{"type": "text", "text": support_alert}],
+                        )
                     )
-                )
+                except Exception as exc:
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type="text",
+                            language=detected_language,
+                            detected_intent="human_handoff_followup",
+                            message_text=support_alert,
+                            analysis_text=None,
+                            knowledge_hits=[],
+                            status="support_group_notify_failed",
+                            error_detail=str(exc),
+                        )
+                    )
+                    results.append({"status": "support_group_notify_failed", "error": str(exc)})
 
             followup_reply = ev_support_service.handoff_followup_text(detected_language)
             if event.replyToken and config.line_channel_access_token:

@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-TOKEN_RE = re.compile(r"[a-z0-9]+|[\u0E00-\u0E7F]+", re.IGNORECASE)
+# Chinese is tokenized at character level for better lexical matching across
+# phrasing variants (for example, 點算 vs 點樣處理 still share many characters).
+TOKEN_RE = re.compile(r"[a-z0-9]+|[\u0E00-\u0E7F]+|[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
