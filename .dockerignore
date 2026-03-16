@@ -7,4 +7,3 @@ __pycache__
 .env.*
 ai_insurance_assistant.egg-info
 tests
-n8n
