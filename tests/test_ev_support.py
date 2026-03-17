@@ -180,6 +180,29 @@ def test_ev_support_respond_grounds_chinese_refund_query_to_refund_faq() -> None
     assert "退款" in payload["reply_text"]
 
 
+def test_ev_support_respond_grounds_chinese_password_issue_to_password_faq() -> None:
+    _configure_test_settings(
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+    response = client.post(
+        "/api/ev-support/respond",
+        json=EVSupportRequest(
+            session_id="line:Uzhpwd",
+            user_id="Uzhpwd",
+            message_text="密碼錯誤點算？",
+            channel="line",
+            language="zh-HK",
+        ).model_dump(mode="json"),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["detected_intent"] == "password_reset"
+    assert payload["knowledge_hits"][0] == "faq-002-password-reset-zh"
+    assert "重設密碼" in payload["reply_text"]
+
+
 def test_line_webhook_generates_local_reply_without_token() -> None:
     with TemporaryDirectory() as tmpdir:
         _configure_test_settings(

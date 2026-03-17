@@ -161,6 +161,12 @@ class EVSupportService:
         lowered = text.lower()
         if any(token in text for token in ["ควัน", "ไหม้", "ไฟช็อต", "ร้อนผิดปกติ"]):
             return "emergency"
+        if any(token in text for token in ["密碼", "密码", "忘記密碼", "忘记密码", "reset password"]):
+            return "password_reset"
+        if any(token in text for token in ["用戶 id", "用户id", "user id"]):
+            return "find_user_id"
+        if any(token in text for token in ["下載 app", "下载app", "download app", "應用程式", "应用程序"]):
+            return "app_download"
         if any(token in text for token in ["充電站", "哪裡", "在哪里", "喺邊", "邊度", "附近充電", "充電地方"]):
             return "charging_locations"
         if any(token in text for token in ["สถานีชาร์จ", "ใกล้ฉัน", "อยู่ที่ไหน"]):
@@ -227,6 +233,8 @@ class EVSupportService:
     def _should_reply_from_faq(self, intent: str, top_faq_intent: str | None, top_faq_score: int) -> bool:
         if not top_faq_intent:
             return False
+        if top_faq_intent == intent:
+            return True
         if intent == "general_support":
             return top_faq_score >= 18
         expected_faq_intents = INTENT_TO_FAQ_INTENTS.get(intent)
