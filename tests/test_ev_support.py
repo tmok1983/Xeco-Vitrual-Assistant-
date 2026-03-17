@@ -90,6 +90,23 @@ def test_ev_support_debug_respond_requires_api_key_and_returns_chinese_faq() -> 
     assert payload["response"]["knowledge_hits"] == ["faq-021-refund-request-zh"]
 
 
+def test_ev_support_debug_faq_reports_loaded_corpus() -> None:
+    _configure_test_settings(
+        api_auth_key="test-key",
+        ev_faq_path="/Users/thomasmok/Documents/Playground/data/xeco_faq_corpus.json",
+    )
+
+    forbidden = client.get("/api/ev-support/debug/faq")
+    assert forbidden.status_code == 401
+
+    allowed = client.get("/api/ev-support/debug/faq?key=test-key")
+    assert allowed.status_code == 200
+    payload = allowed.json()
+    assert payload["exists"] is True
+    assert payload["entry_count"] > 0
+    assert payload["faq_path"].endswith("xeco_faq_corpus.json")
+
+
 def test_ev_support_respond_returns_chinese_for_chinese_input() -> None:
     _configure_test_settings(
         ev_default_language="en-US",

@@ -9,6 +9,7 @@ import ssl
 from functools import lru_cache
 from urllib import request
 from urllib.error import URLError
+from pathlib import Path
 
 import certifi
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
@@ -235,6 +236,17 @@ def ev_support_debug_respond(req: EVSupportRequest) -> dict:
         "request": req.model_dump(mode="json"),
         "detected_language_before_reply": detected_language,
         "response": response.model_dump(mode="json"),
+    }
+
+
+@router.get("/ev-support/debug/faq", dependencies=[Depends(require_api_key)])
+def ev_support_debug_faq() -> dict:
+    service = get_ev_support_service()
+    faq_path = Path(service.faq_retriever.faq_path)
+    return {
+        "faq_path": str(faq_path),
+        "exists": faq_path.exists(),
+        "entry_count": len(service.faq_retriever.entries),
     }
 
 
@@ -1444,6 +1456,12 @@ def workbench() -> str:
       color: #374151;
       margin-bottom: 6px;
     }
+    .voice-field {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      gap: 8px;
+      align-items: center;
+    }
     input, select {
       width: 100%;
       border-radius: 14px;
@@ -1452,6 +1470,27 @@ def workbench() -> str:
       font-size: 15px;
       background: rgba(255,255,255,0.9);
       color: var(--ink);
+    }
+    .voice-btn {
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      color: var(--accent);
+      font-size: 18px;
+      line-height: 1;
+    }
+    .voice-btn.active {
+      background: linear-gradient(135deg, #b45309, #ea580c);
+      color: #fff;
+    }
+    .voice-note {
+      margin: 12px 0 0;
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.5;
     }
     .checks {
       display: grid;
@@ -1680,17 +1719,18 @@ def workbench() -> str:
         <form id="workbenchForm">
           <h3>客戶資料</h3>
           <div class="grid">
-            <div><label>客戶名稱 / 編號</label><input name="name_or_code" value="Client Workbench" required /></div>
-            <div><label>年齡</label><input name="age" type="number" value="39" required /></div>
-            <div><label>性別</label><select name="gender"><option>Male</option><option selected>Female</option><option>Other</option></select></div>
-            <div><label>婚姻狀況</label><select name="marital_status"><option>Single</option><option selected>Married</option><option>Divorced</option><option>Widowed</option></select></div>
-            <div><label>受扶養人數</label><input name="dependents" type="number" value="1" required /></div>
-            <div><label>職業</label><input name="occupation" value="Product Manager" required /></div>
-            <div><label>每月收入</label><input name="income_monthly" type="number" value="82000" required /></div>
-            <div><label>每月支出</label><input name="expenses_monthly" type="number" value="36000" required /></div>
-            <div><label>每月保險預算</label><input name="budget_monthly" type="number" value="4500" required /></div>
-            <div><label>目前每月保費</label><input name="current_premium" type="number" value="1400" required /></div>
+            <div><label>客戶名稱 / 編號</label><div class="voice-field"><input name="name_or_code" value="Client Workbench" required /><button class="voice-btn" type="button" data-field="name_or_code" aria-label="語音輸入客戶名稱">🎙</button></div></div>
+            <div><label>年齡</label><div class="voice-field"><input name="age" type="number" value="39" required /><button class="voice-btn" type="button" data-field="age" aria-label="語音輸入年齡">🎙</button></div></div>
+            <div><label>性別</label><div class="voice-field"><select name="gender"><option>Male</option><option selected>Female</option><option>Other</option></select><button class="voice-btn" type="button" data-field="gender" aria-label="語音輸入性別">🎙</button></div></div>
+            <div><label>婚姻狀況</label><div class="voice-field"><select name="marital_status"><option>Single</option><option selected>Married</option><option>Divorced</option><option>Widowed</option></select><button class="voice-btn" type="button" data-field="marital_status" aria-label="語音輸入婚姻狀況">🎙</button></div></div>
+            <div><label>受扶養人數</label><div class="voice-field"><input name="dependents" type="number" value="1" required /><button class="voice-btn" type="button" data-field="dependents" aria-label="語音輸入受扶養人數">🎙</button></div></div>
+            <div><label>職業</label><div class="voice-field"><input name="occupation" value="Product Manager" required /><button class="voice-btn" type="button" data-field="occupation" aria-label="語音輸入職業">🎙</button></div></div>
+            <div><label>每月收入</label><div class="voice-field"><input name="income_monthly" type="number" value="82000" required /><button class="voice-btn" type="button" data-field="income_monthly" aria-label="語音輸入每月收入">🎙</button></div></div>
+            <div><label>每月支出</label><div class="voice-field"><input name="expenses_monthly" type="number" value="36000" required /><button class="voice-btn" type="button" data-field="expenses_monthly" aria-label="語音輸入每月支出">🎙</button></div></div>
+            <div><label>每月保險預算</label><div class="voice-field"><input name="budget_monthly" type="number" value="4500" required /><button class="voice-btn" type="button" data-field="budget_monthly" aria-label="語音輸入每月保險預算">🎙</button></div></div>
+            <div><label>目前每月保費</label><div class="voice-field"><input name="current_premium" type="number" value="1400" required /><button class="voice-btn" type="button" data-field="current_premium" aria-label="語音輸入目前每月保費">🎙</button></div></div>
           </div>
+          <p class="voice-note">點擊欄位右側麥克風即可語音填表。數字欄位會自動擷取數字；性別與婚姻狀況會自動對應選項。</p>
 
           <h3>現有保障</h3>
           <div class="checks">
@@ -1778,6 +1818,10 @@ def workbench() -> str:
     const statusBox = document.getElementById("statusBox");
     const linkBar = document.getElementById("linkBar");
     const googleAuthBar = document.getElementById("googleAuthBar");
+    const voiceButtons = Array.from(document.querySelectorAll(".voice-btn"));
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    let recognition = null;
+    let activeVoiceButton = null;
 
     async function loadGoogleStatus() {
       googleAuthBar.innerHTML = "";
@@ -1809,6 +1853,96 @@ def workbench() -> str:
       statusBox.classList.toggle("danger", isError);
     }
 
+    function normalizeVoiceValue(fieldName, transcript) {
+      const raw = (transcript || "").trim();
+      const compact = raw.replace(/\\s+/g, "");
+      const digits = (raw.match(/\\d+/g) || []).join("");
+      if (["age", "dependents", "income_monthly", "expenses_monthly", "budget_monthly", "current_premium"].includes(fieldName)) {
+        return digits || "";
+      }
+      if (fieldName === "gender") {
+        if (/female|女/i.test(raw)) return "Female";
+        if (/male|男/i.test(raw)) return "Male";
+        return "Other";
+      }
+      if (fieldName === "marital_status") {
+        if (/married|已婚|結婚/i.test(raw)) return "Married";
+        if (/single|單身|未婚/i.test(raw)) return "Single";
+        if (/divorced|離婚/i.test(raw)) return "Divorced";
+        if (/widowed|喪偶/i.test(raw)) return "Widowed";
+        return "";
+      }
+      return compact || raw;
+    }
+
+    function stopVoiceInput() {
+      if (recognition) {
+        recognition.stop();
+      }
+      if (activeVoiceButton) {
+        activeVoiceButton.classList.remove("active");
+        activeVoiceButton = null;
+      }
+    }
+
+    function startVoiceInput(button) {
+      if (!SpeechRecognition) {
+        setStatus("此瀏覽器不支援語音輸入。建議使用 Chrome 或 Edge。", true);
+        return;
+      }
+
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "zh-HK";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+          if (!activeVoiceButton) return;
+          const fieldName = activeVoiceButton.dataset.field;
+          const target = form.elements[fieldName];
+          const transcript = event.results[0][0].transcript;
+          const value = normalizeVoiceValue(fieldName, transcript);
+          if (!value) {
+            setStatus(`未能辨識 ${fieldName} 的有效內容，請再試一次。`, true);
+            return;
+          }
+          target.value = value;
+          target.dispatchEvent(new Event("change", { bubbles: true }));
+          setStatus(`已完成語音填寫：${transcript}`);
+        };
+
+        recognition.onerror = (event) => {
+          const message = event.error === "not-allowed"
+            ? "瀏覽器尚未取得麥克風權限。"
+            : `語音輸入失敗：${event.error}`;
+          setStatus(message, true);
+          stopVoiceInput();
+        };
+
+        recognition.onend = () => {
+          if (activeVoiceButton) {
+            activeVoiceButton.classList.remove("active");
+            activeVoiceButton = null;
+          }
+        };
+      }
+
+      if (activeVoiceButton === button) {
+        stopVoiceInput();
+        return;
+      }
+
+      if (activeVoiceButton) {
+        activeVoiceButton.classList.remove("active");
+      }
+
+      activeVoiceButton = button;
+      button.classList.add("active");
+      setStatus("正在收音，請直接說出該欄位內容。");
+      recognition.start();
+    }
+
     function setList(id, items, formatter) {
       const el = document.getElementById(id);
       el.innerHTML = "";
@@ -1819,6 +1953,14 @@ def workbench() -> str:
         el.appendChild(li);
       });
     }
+
+    voiceButtons.forEach((button) => {
+      button.addEventListener("click", () => startVoiceInput(button));
+      if (!SpeechRecognition) {
+        button.disabled = true;
+        button.title = "目前瀏覽器不支援語音輸入";
+      }
+    });
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
