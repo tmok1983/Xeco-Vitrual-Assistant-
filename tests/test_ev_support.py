@@ -107,6 +107,29 @@ def test_ev_support_debug_faq_reports_loaded_corpus() -> None:
     assert payload["faq_path"].endswith("xeco_faq_corpus.json")
 
 
+def test_ev_support_debug_runtime_reports_llm_and_media_config() -> None:
+    _configure_test_settings(
+        api_auth_key="test-key",
+        llm_provider="openai",
+        openai_api_key="sk-test",
+        openai_model="gpt-4.1-mini",
+        openai_transcribe_model="gpt-4o-mini-transcribe",
+        ev_media_storage_dir="/Users/thomasmok/Documents/Playground/data/line_media",
+    )
+
+    forbidden = client.get("/api/ev-support/debug/runtime")
+    assert forbidden.status_code == 401
+
+    allowed = client.get("/api/ev-support/debug/runtime?key=test-key")
+    assert allowed.status_code == 200
+    payload = allowed.json()
+    assert payload["llm_provider"] == "openai"
+    assert payload["openai_api_key_present"] is True
+    assert payload["openai_model"] == "gpt-4.1-mini"
+    assert payload["openai_transcribe_model"] == "gpt-4o-mini-transcribe"
+    assert payload["ev_media_storage_dir"].endswith("line_media")
+
+
 def test_ev_support_respond_returns_chinese_for_chinese_input() -> None:
     _configure_test_settings(
         ev_default_language="en-US",

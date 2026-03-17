@@ -250,6 +250,20 @@ def ev_support_debug_faq() -> dict:
     }
 
 
+@router.get("/ev-support/debug/runtime", dependencies=[Depends(require_api_key)])
+def ev_support_debug_runtime() -> dict:
+    service = get_ev_support_service()
+    media_dir = Path(service.media_store.root_dir)
+    return {
+        "llm_provider": config.llm_provider,
+        "openai_api_key_present": bool(config.openai_api_key),
+        "openai_model": config.openai_model,
+        "openai_transcribe_model": config.openai_transcribe_model,
+        "ev_media_storage_dir": str(media_dir),
+        "ev_media_storage_exists": media_dir.exists(),
+    }
+
+
 @router.get("/ev-support/logs", dependencies=[Depends(require_api_key)])
 def ev_support_logs(limit: int = Query(default=100, ge=1, le=500), session_id: str | None = None) -> dict:
     rows = get_chat_log_repository().list_messages(limit=limit, session_id=session_id)
