@@ -5,6 +5,7 @@ import hashlib
 import hmac
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -475,3 +476,73 @@ def test_line_webhook_allows_customer_to_resume_bot_from_direct_chat() -> None:
         normal_payload = normal_response.json()
         assert normal_payload["results"][0]["status"] == "generated_locally"
         assert normal_payload["results"][0]["detected_intent"] == "charging_locations"
+
+
+def test_line_webhook_starts_handoff_for_cantonese_cs_text() -> None:
+    _configure_test_settings(
+        line_channel_secret=None,
+        line_channel_access_token=None,
+        line_support_group_id=None,
+        ev_n8n_webhook_url=None,
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+
+    response = client.post(
+        "/api/ev-support/line/webhook",
+        json={
+            "destination": "dest",
+            "events": [
+                {
+                    "type": "message",
+                    "replyToken": "reply-token",
+                    "timestamp": 1710000010000,
+                    "source": {"type": "user", "userId": "UcsText"},
+                    "message": {"id": "mid-7", "type": "text", "text": "唔該轉去CS"},
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["status"] == "human_handoff_started"
+
+
+def test_line_webhook_starts_handoff_for_audio_transcript_request() -> None:
+    _configure_test_settings(
+        line_channel_secret=None,
+        line_channel_access_token=None,
+        line_support_group_id=None,
+        ev_n8n_webhook_url=None,
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+
+    service = routes.get_ev_support_service()
+    stored = SimpleNamespace(file_path="/tmp/test-audio.m4a")
+
+    with (
+        patch.object(service, "fetch_and_store_line_media", return_value=stored),
+        patch.object(service, "analyze_media", return_value="我意思係客戶服務,完"),
+    ):
+        response = client.post(
+            "/api/ev-support/line/webhook",
+            json={
+                "destination": "dest",
+                "events": [
+                    {
+                        "type": "message",
+                        "replyToken": "reply-token",
+                        "timestamp": 1710000011000,
+                        "source": {"type": "user", "userId": "UcsAudio"},
+                        "message": {"id": "mid-8", "type": "audio", "duration": 1000},
+                    }
+                ],
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["status"] == "human_handoff_started"
+    assert "客服" in payload["results"][0]["reply_text"] or "support" in payload["results"][0]["reply_text"].lower()

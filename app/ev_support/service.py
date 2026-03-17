@@ -112,9 +112,14 @@ HUMAN_HANDOFF_PATTERNS = [
     "need human",
     "customer service",
     "cs team",
+    "轉去cs",
+    "转去cs",
+    "去cs",
     "真人",
     "人工",
     "客服",
+    "客戶服務",
+    "客户服务",
     "搵客服",
     "轉人工",
     "เจ้าหน้าที่",
@@ -261,6 +266,8 @@ class EVSupportService:
     def is_human_handoff_requested(self, text: str) -> bool:
         lowered = text.lower()
         if re.search(r"(^|\W)cs(\W|$)", lowered):
+            return True
+        if any(token in lowered for token in ["轉去cs", "转去cs", "去cs"]) or lowered.endswith("cs"):
             return True
         return any(pattern in lowered or pattern in text for pattern in HUMAN_HANDOFF_PATTERNS)
 

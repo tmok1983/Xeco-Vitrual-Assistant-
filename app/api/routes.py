@@ -735,11 +735,110 @@ async def ev_support_line_webhook(
                 message_type=event.message.type,
                 file_path=stored.file_path,
             )
+            media_language = ev_support_service.detect_language(analysis_text, detected_language)
+
+            if ev_support_service.is_human_handoff_requested(analysis_text):
+                session = ev_support_service.activate_human_handoff(
+                    session_id=session_id,
+                    user_id=event.source.userId,
+                    channel="line",
+                    language=media_language,
+                    reason="customer_requested_human_via_media",
+                )
+                customer_reply = ev_support_service.handoff_reply_text(media_language)
+                support_alert = ev_support_service.support_group_alert_text(
+                    session_id=session_id,
+                    user_id=event.source.userId,
+                    language=media_language,
+                    customer_text=raw_text,
+                    reason="customer_requested_human_via_media",
+                    media_summary=analysis_text,
+                )
+
+                if config.line_support_group_id:
+                    try:
+                        ev_support_service.send_line_push(
+                            LinePushRequest(
+                                to=config.line_support_group_id,
+                                messages=[{"type": "text", "text": support_alert}],
+                            )
+                        )
+                    except Exception as exc:
+                        repo.log_message(
+                            ChatLogRecord(
+                                session_id=session_id,
+                                user_id=event.source.userId,
+                                channel="line",
+                                direction="outbound",
+                                message_type=event.message.type,
+                                language=media_language,
+                                detected_intent="human_handoff",
+                                message_text=support_alert,
+                                analysis_text=analysis_text,
+                                knowledge_hits=[],
+                                status="support_group_notify_failed",
+                                media_path=stored.file_path,
+                                error_detail=str(exc),
+                            )
+                        )
+                        results.append({"status": "support_group_notify_failed", "error": str(exc)})
+
+                if event.replyToken and config.line_channel_access_token:
+                    line_payload = ev_support_service.build_line_reply_request(
+                        event.replyToken,
+                        type("Resp", (), {"reply_text": customer_reply}),
+                    )
+                    status, body = ev_support_service.send_line_reply(line_payload)
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type=event.message.type,
+                            language=media_language,
+                            detected_intent="human_handoff",
+                            message_text=customer_reply,
+                            analysis_text=analysis_text,
+                            knowledge_hits=[],
+                            status="delivered" if status < 400 else "delivery_failed",
+                            media_path=stored.file_path,
+                            error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                        )
+                    )
+                else:
+                    repo.log_message(
+                        ChatLogRecord(
+                            session_id=session_id,
+                            user_id=event.source.userId,
+                            channel="line",
+                            direction="outbound",
+                            message_type=event.message.type,
+                            language=media_language,
+                            detected_intent="human_handoff",
+                            message_text=customer_reply,
+                            analysis_text=analysis_text,
+                            knowledge_hits=[],
+                            status="generated_locally",
+                            media_path=stored.file_path,
+                        )
+                    )
+                results.append(
+                    {
+                        "status": "human_handoff_started",
+                        "reply_text": customer_reply,
+                        "analysis_text": analysis_text,
+                        "media_path": stored.file_path,
+                        "session_id": session.session_id,
+                    }
+                )
+                continue
+
             response = ev_support_service.build_media_response(
                 session_id=session_id,
                 user_id=event.source.userId,
                 channel="line",
-                language=detected_language,
+                language=media_language,
                 message_type=event.message.type,
                 analysis=analysis_text,
             )
