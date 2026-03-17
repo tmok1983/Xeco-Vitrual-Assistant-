@@ -259,6 +259,7 @@ def ev_support_debug_runtime() -> dict:
         "openai_api_key_present": bool(config.openai_api_key),
         "openai_model": config.openai_model,
         "openai_transcribe_model": config.openai_transcribe_model,
+        "line_support_group_id": config.line_support_group_id,
         "ev_media_storage_dir": str(media_dir),
         "ev_media_storage_exists": media_dir.exists(),
     }

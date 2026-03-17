@@ -115,6 +115,7 @@ def test_ev_support_debug_runtime_reports_llm_and_media_config() -> None:
         openai_api_key="sk-test",
         openai_model="gpt-4.1-mini",
         openai_transcribe_model="gpt-4o-mini-transcribe",
+        line_support_group_id="Ctestsupportgroup",
         ev_media_storage_dir="/Users/thomasmok/Documents/Playground/data/line_media",
     )
 
@@ -128,6 +129,7 @@ def test_ev_support_debug_runtime_reports_llm_and_media_config() -> None:
     assert payload["openai_api_key_present"] is True
     assert payload["openai_model"] == "gpt-4.1-mini"
     assert payload["openai_transcribe_model"] == "gpt-4o-mini-transcribe"
+    assert payload["line_support_group_id"] == "Ctestsupportgroup"
     assert payload["ev_media_storage_dir"].endswith("line_media")
 
 
