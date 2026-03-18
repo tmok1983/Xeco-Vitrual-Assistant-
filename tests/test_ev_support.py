@@ -480,6 +480,59 @@ def test_line_webhook_allows_customer_to_resume_bot_from_direct_chat() -> None:
         assert normal_payload["results"][0]["detected_intent"] == "charging_locations"
 
 
+def test_line_webhook_handoff_state_persists_across_service_rebuild() -> None:
+    with TemporaryDirectory() as tmpdir:
+        _configure_test_settings(
+            line_channel_secret=None,
+            line_channel_access_token=None,
+            line_support_group_id=None,
+            ev_n8n_webhook_url=None,
+            ev_default_language="en-US",
+            ev_enable_thai_after_setup=False,
+            ev_chat_log_db_path=str(Path(tmpdir) / "chat_logs.db"),
+            ev_session_db_path=str(Path(tmpdir) / "ev_support_sessions.db"),
+        )
+
+        handoff_response = client.post(
+            "/api/ev-support/line/webhook",
+            json={
+                "destination": "dest",
+                "events": [
+                    {
+                        "type": "message",
+                        "replyToken": "reply-token",
+                        "timestamp": 1710000003000,
+                        "source": {"type": "user", "userId": "Upersist"},
+                        "message": {"id": "mid-9", "type": "text", "text": "客服"},
+                    }
+                ],
+            },
+        )
+        assert handoff_response.status_code == 200
+        assert handoff_response.json()["results"][0]["status"] == "human_handoff_started"
+
+        routes.get_ev_support_service.cache_clear()
+
+        followup_response = client.post(
+            "/api/ev-support/line/webhook",
+            json={
+                "destination": "dest",
+                "events": [
+                    {
+                        "type": "message",
+                        "replyToken": "reply-token",
+                        "timestamp": 1710000004000,
+                        "source": {"type": "user", "userId": "Upersist"},
+                        "message": {"id": "mid-10", "type": "text", "text": "ยังไม่มีคนตอบ"},
+                    }
+                ],
+            },
+        )
+
+        assert followup_response.status_code == 200
+        assert followup_response.json()["results"][0]["status"] == "human_handoff_active"
+
+
 def test_line_webhook_starts_handoff_for_cantonese_cs_text() -> None:
     _configure_test_settings(
         line_channel_secret=None,

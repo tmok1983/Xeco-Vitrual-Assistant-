@@ -19,7 +19,7 @@ from app.ev_support.models import (
     LinePushRequest,
     LineReplyRequest,
 )
-from app.ev_support.repository import InMemoryEVSupportRepository
+from app.ev_support.repository import EVSupportSessionRepository
 from app.llm.providers import LLMClient
 
 
@@ -152,7 +152,7 @@ class EVSupportService:
         self,
         faq_retriever: LocalFAQRetriever,
         media_store: LocalMediaStore,
-        repo: InMemoryEVSupportRepository,
+        repo: EVSupportSessionRepository,
         llm: LLMClient,
         config: AppConfig,
     ) -> None:

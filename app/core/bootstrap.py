@@ -6,7 +6,7 @@ from app.data.repository import InMemoryCaseRepository, PostgresCaseRepository
 from app.ev_support.faq_store import LocalFAQRetriever
 from app.ev_support.log_repository import SQLiteChatLogRepository
 from app.ev_support.media_store import LocalMediaStore
-from app.ev_support.repository import InMemoryEVSupportRepository
+from app.ev_support.repository import SQLiteEVSupportRepository
 from app.ev_support.service import EVSupportService
 from app.llm.prompt_registry import PromptRegistry
 from app.llm.providers import GeminiClient, LLMClient, MockLLMClient, OpenAIClient
@@ -42,7 +42,7 @@ def build_ev_support_service() -> EVSupportService:
     return EVSupportService(
         faq_retriever=LocalFAQRetriever(cfg.ev_faq_path),
         media_store=LocalMediaStore(cfg.ev_media_storage_dir),
-        repo=InMemoryEVSupportRepository(),
+        repo=SQLiteEVSupportRepository(cfg.ev_session_db_path),
         llm=llm,
         config=cfg,
     )

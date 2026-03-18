@@ -25,7 +25,7 @@ class AppConfig:
     llm_provider: str = "mock"
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1-mini"
-    openai_transcribe_model: str = "gpt-4o-mini-transcribe"
+    openai_transcribe_model: str = "whisper-1"
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash"
     api_auth_key: str | None = None
@@ -49,18 +49,25 @@ class AppConfig:
     ev_enable_thai_after_setup: bool = False
     ev_faq_path: str = str(Path(__file__).resolve().parents[2] / "data" / "ev_faq.json")
     ev_chat_log_db_path: str = str(Path(__file__).resolve().parents[2] / "data" / "chat_logs.db")
+    ev_session_db_path: str = str(Path(__file__).resolve().parents[2] / "data" / "ev_support_sessions.db")
     ev_media_storage_dir: str = str(Path(__file__).resolve().parents[2] / "data" / "line_media")
 
     @staticmethod
     def from_env() -> "AppConfig":
         _load_dotenv()
+        default_chat_log_db_path = str(Path(__file__).resolve().parents[2] / "data" / "chat_logs.db")
+        chat_log_db_path = os.getenv("EV_CHAT_LOG_DB_PATH", default_chat_log_db_path)
+        session_db_path = os.getenv(
+            "EV_SESSION_DB_PATH",
+            str(Path(chat_log_db_path).with_name("ev_support_sessions.db")),
+        )
         return AppConfig(
             data_backend=os.getenv("DATA_BACKEND", "memory").lower(),
             database_url=os.getenv("DATABASE_URL"),
             llm_provider=os.getenv("LLM_PROVIDER", "mock").lower(),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
-            openai_transcribe_model=os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"),
+            openai_transcribe_model=os.getenv("OPENAI_TRANSCRIBE_MODEL", "whisper-1"),
             gemini_api_key=os.getenv("GEMINI_API_KEY"),
             gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
             api_auth_key=os.getenv("API_AUTH_KEY"),
@@ -104,10 +111,8 @@ class AppConfig:
                 "EV_FAQ_PATH",
                 str(Path(__file__).resolve().parents[2] / "data" / "ev_faq.json"),
             ),
-            ev_chat_log_db_path=os.getenv(
-                "EV_CHAT_LOG_DB_PATH",
-                str(Path(__file__).resolve().parents[2] / "data" / "chat_logs.db"),
-            ),
+            ev_chat_log_db_path=chat_log_db_path,
+            ev_session_db_path=session_db_path,
             ev_media_storage_dir=os.getenv(
                 "EV_MEDIA_STORAGE_DIR",
                 str(Path(__file__).resolve().parents[2] / "data" / "line_media"),
