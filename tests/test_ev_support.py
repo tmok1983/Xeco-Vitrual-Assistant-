@@ -601,3 +601,76 @@ def test_line_webhook_starts_handoff_for_audio_transcript_request() -> None:
     payload = response.json()
     assert payload["results"][0]["status"] == "human_handoff_started"
     assert "客服" in payload["results"][0]["reply_text"] or "support" in payload["results"][0]["reply_text"].lower()
+
+
+def test_support_group_can_reply_to_customer_session() -> None:
+    _configure_test_settings(
+        line_channel_secret=None,
+        line_channel_access_token=None,
+        line_support_group_id="Csupportgroup",
+        ev_n8n_webhook_url=None,
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+
+    service = routes.get_ev_support_service()
+    service.activate_human_handoff(
+        session_id="line:Ureply",
+        user_id="Ureply",
+        channel="line",
+        language="en-US",
+        reason="customer_requested_human",
+    )
+
+    response = client.post(
+        "/api/ev-support/line/webhook",
+        json={
+            "destination": "dest",
+            "events": [
+                {
+                    "type": "message",
+                    "replyToken": "reply-token",
+                    "timestamp": 1710000012000,
+                    "source": {"type": "group", "groupId": "Csupportgroup"},
+                    "message": {"id": "mid-11", "type": "text", "text": "reply line:Ureply We are checking your case now."},
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["status"] == "support_group_reply_sent"
+    assert payload["results"][0]["session_id"] == "line:Ureply"
+
+
+def test_support_group_reply_requires_existing_session() -> None:
+    _configure_test_settings(
+        line_channel_secret=None,
+        line_channel_access_token=None,
+        line_support_group_id="Csupportgroup",
+        ev_n8n_webhook_url=None,
+        ev_default_language="en-US",
+        ev_enable_thai_after_setup=False,
+    )
+
+    response = client.post(
+        "/api/ev-support/line/webhook",
+        json={
+            "destination": "dest",
+            "events": [
+                {
+                    "type": "message",
+                    "replyToken": "reply-token",
+                    "timestamp": 1710000013000,
+                    "source": {"type": "group", "groupId": "Csupportgroup"},
+                    "message": {"id": "mid-12", "type": "text", "text": "reply line:Umissing Please contact us later."},
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"][0]["status"] == "support_group_reply_not_found"
+    assert payload["results"][0]["session_id"] == "line:Umissing"

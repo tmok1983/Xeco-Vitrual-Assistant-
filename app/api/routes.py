@@ -6,6 +6,7 @@ import hmac
 from html import escape
 import json
 import ssl
+import tempfile
 from functools import lru_cache
 from urllib import request
 from urllib.error import URLError
@@ -68,6 +69,157 @@ def _post_to_n8n_webhook(payload: dict) -> tuple[int, dict]:
         except json.JSONDecodeError:
             body = {"raw": raw}
         return resp.status, body
+
+
+def _clean_json_text(raw: str) -> str:
+    text = (raw or "").strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:].strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        return text[start : end + 1]
+    return text
+
+
+def _extract_voice_fields(transcript: str) -> dict:
+    service = get_service()
+    prompt = f"""
+You extract structured insurance client intake fields from a noisy voice transcript.
+Return JSON only. No markdown. No explanation.
+
+Target schema:
+{{
+  "name_or_code": string|null,
+  "age": number|null,
+  "gender": "Male"|"Female"|"Other"|null,
+  "marital_status": "Single"|"Married"|"Divorced"|"Widowed"|null,
+  "dependents": number|null,
+  "occupation": string|null,
+  "income_monthly": number|null,
+  "expenses_monthly": number|null,
+  "budget_monthly": number|null,
+  "current_premium": number|null,
+  "existing_medical": boolean|null,
+  "existing_ci": boolean|null,
+  "existing_life": boolean|null,
+  "existing_accident": boolean|null,
+  "missing_fields": string[]
+}}
+
+Normalization rules:
+- Only use: Male, Female, Other.
+- Only use: Single, Married, Divorced, Widowed.
+- Numbers must be plain numbers without commas or currency symbols.
+- Use null if uncertain.
+- If transcript is mostly noise or does not contain enough intake information, keep fields null.
+- "危疾" means critical illness.
+- "醫療", "住院" usually map to existing_medical.
+- "人壽", "壽險" map to existing_life.
+- "意外" maps to existing_accident.
+- "有", "已有", "買咗", "已買" mean true when clearly tied to a coverage type.
+- "冇", "未有", "沒有", "未買" mean false when clearly tied to a coverage type.
+- Do not invent values.
+
+Examples:
+Transcript: 客戶名稱 Belinda Mok，39歲，女性，已婚，1位受扶養人，職業產品經理，每月收入82000，每月支出36000，每月保險預算4500，目前每月保費1400，已有醫療及意外保障，未有重大疾病及壽險保障。
+Output:
+{{
+  "name_or_code": "Belinda Mok",
+  "age": 39,
+  "gender": "Female",
+  "marital_status": "Married",
+  "dependents": 1,
+  "occupation": "產品經理",
+  "income_monthly": 82000,
+  "expenses_monthly": 36000,
+  "budget_monthly": 4500,
+  "current_premium": 1400,
+  "existing_medical": true,
+  "existing_ci": false,
+  "existing_life": false,
+  "existing_accident": true,
+  "missing_fields": []
+}}
+
+Transcript: 佢係男，四十五歲，做生意，每月入息十萬，支出四萬，保費而家二千，未有危疾，有醫療，有意外。
+Output:
+{{
+  "name_or_code": null,
+  "age": 45,
+  "gender": "Male",
+  "marital_status": null,
+  "dependents": null,
+  "occupation": "做生意",
+  "income_monthly": 100000,
+  "expenses_monthly": 40000,
+  "budget_monthly": null,
+  "current_premium": 2000,
+  "existing_medical": true,
+  "existing_ci": false,
+  "existing_life": null,
+  "existing_accident": true,
+  "missing_fields": ["name_or_code", "marital_status", "dependents", "budget_monthly"]
+}}
+
+Transcript: 哈 哈國 海洋 西門 西門
+Output:
+{{
+  "name_or_code": null,
+  "age": null,
+  "gender": null,
+  "marital_status": null,
+  "dependents": null,
+  "occupation": null,
+  "income_monthly": null,
+  "expenses_monthly": null,
+  "budget_monthly": null,
+  "current_premium": null,
+  "existing_medical": null,
+  "existing_ci": null,
+  "existing_life": null,
+  "existing_accident": null,
+  "missing_fields": ["name_or_code", "age", "gender", "marital_status", "dependents", "occupation", "income_monthly", "expenses_monthly", "budget_monthly", "current_premium"]
+}}
+
+Now extract from this transcript:
+{transcript}
+""".strip()
+    raw = service.llm.complete(prompt)
+    try:
+        payload = json.loads(_clean_json_text(raw))
+    except Exception:
+        return {
+            "name_or_code": None,
+            "age": None,
+            "gender": None,
+            "marital_status": None,
+            "dependents": None,
+            "occupation": None,
+            "income_monthly": None,
+            "expenses_monthly": None,
+            "budget_monthly": None,
+            "current_premium": None,
+            "existing_medical": None,
+            "existing_ci": None,
+            "existing_life": None,
+            "existing_accident": None,
+            "missing_fields": [
+                "name_or_code",
+                "age",
+                "gender",
+                "marital_status",
+                "dependents",
+                "occupation",
+                "income_monthly",
+                "expenses_monthly",
+                "budget_monthly",
+                "current_premium",
+            ],
+        }
+    return payload if isinstance(payload, dict) else {}
 
 
 def _post_to_ev_n8n_webhook(payload: dict) -> tuple[int, dict]:
@@ -384,6 +536,93 @@ async def ev_support_line_webhook(
                 and event.source.groupId == config.line_support_group_id
                 and event.message.type == "text"
             ):
+                reply_command = ev_support_service.parse_support_group_reply_command(raw_text)
+                if reply_command:
+                    target_session_id, support_reply = reply_command
+                    session = ev_support_service.repo.get(target_session_id)
+                    if session:
+                        if config.line_channel_access_token:
+                            status, body = ev_support_service.send_line_push(
+                                LinePushRequest(
+                                    to=session.channel_user_id,
+                                    messages=[{"type": "text", "text": support_reply}],
+                                )
+                            )
+                            repo.log_message(
+                                ChatLogRecord(
+                                    session_id=target_session_id,
+                                    user_id=session.channel_user_id,
+                                    channel="line",
+                                    direction="outbound",
+                                    message_type="text",
+                                    language=session.language,
+                                    detected_intent="support_group_reply",
+                                    message_text=support_reply,
+                                    analysis_text=None,
+                                    knowledge_hits=[],
+                                    status="delivered" if status < 400 else "delivery_failed",
+                                    error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                                )
+                            )
+                        else:
+                            repo.log_message(
+                                ChatLogRecord(
+                                    session_id=target_session_id,
+                                    user_id=session.channel_user_id,
+                                    channel="line",
+                                    direction="outbound",
+                                    message_type="text",
+                                    language=session.language,
+                                    detected_intent="support_group_reply",
+                                    message_text=support_reply,
+                                    analysis_text=None,
+                                    knowledge_hits=[],
+                                    status="generated_locally",
+                                )
+                            )
+
+                        group_reply = f"Reply sent to {target_session_id}."
+                        if event.replyToken and config.line_channel_access_token:
+                            status, body = ev_support_service.send_line_reply(
+                                ev_support_service.build_line_reply_request(
+                                    event.replyToken,
+                                    type("Resp", (), {"reply_text": group_reply}),
+                                )
+                            )
+                            repo.log_message(
+                                ChatLogRecord(
+                                    session_id=target_session_id,
+                                    user_id=event.source.groupId,
+                                    channel="line",
+                                    direction="outbound",
+                                    message_type="text",
+                                    language="en-US",
+                                    detected_intent="support_group_reply",
+                                    message_text=group_reply,
+                                    analysis_text=None,
+                                    knowledge_hits=[],
+                                    status="delivered" if status < 400 else "delivery_failed",
+                                    error_detail=None if status < 400 else json.dumps(body, ensure_ascii=False),
+                                )
+                            )
+
+                        results.append({"status": "support_group_reply_sent", "session_id": target_session_id})
+                        continue
+
+                    help_text = (
+                        f"No active session found for {target_session_id}.\n\n"
+                        f"{ev_support_service.support_group_reply_help_text()}"
+                    )
+                    if event.replyToken and config.line_channel_access_token:
+                        ev_support_service.send_line_reply(
+                            ev_support_service.build_line_reply_request(
+                                event.replyToken,
+                                type("Resp", (), {"reply_text": help_text}),
+                            )
+                        )
+                    results.append({"status": "support_group_reply_not_found", "session_id": target_session_id})
+                    continue
+
                 target_session_id = ev_support_service.parse_handoff_close_command(raw_text)
                 if target_session_id:
                     session = ev_support_service.close_human_handoff(target_session_id)
@@ -1570,12 +1809,6 @@ def workbench() -> str:
       color: #374151;
       margin-bottom: 6px;
     }
-    .voice-field {
-      display: grid;
-      grid-template-columns: 1fr 46px;
-      gap: 8px;
-      align-items: center;
-    }
     input, select {
       width: 100%;
       border-radius: 14px;
@@ -1585,23 +1818,50 @@ def workbench() -> str:
       background: rgba(255,255,255,0.9);
       color: var(--ink);
     }
-    .voice-btn {
-      width: 46px;
-      height: 46px;
-      padding: 0;
-      border-radius: 14px;
+    textarea {
+      width: 100%;
+      min-height: 112px;
+      border-radius: 18px;
+      border: 1px solid rgba(107, 114, 128, 0.25);
+      padding: 14px 16px;
+      font-size: 15px;
+      background: rgba(255,255,255,0.92);
+      color: var(--ink);
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .voice-capture {
+      margin: 14px 0 18px;
+      padding: 14px;
+      border-radius: 18px;
       border: 1px solid var(--line);
-      background: rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.72);
+    }
+    .voice-capture-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .voice-capture-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .voice-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
       color: var(--accent);
-      font-size: 18px;
-      line-height: 1;
+      padding: 10px 14px;
     }
     .voice-btn.active {
       background: linear-gradient(135deg, #b45309, #ea580c);
       color: #fff;
     }
     .voice-note {
-      margin: 12px 0 0;
+      margin: 8px 0 0;
       color: #6b7280;
       font-size: 13px;
       line-height: 1.5;
@@ -1831,20 +2091,34 @@ def workbench() -> str:
         <h2>案件輸入</h2>
         <div class="status" id="statusBox">系統已就緒。提交案件後會生成 Module A 與 Module B 輸出。</div>
         <form id="workbenchForm">
+          <div class="voice-capture">
+            <div class="voice-capture-head">
+              <div>
+                <h3 style="margin:0;">語音口述輸入</h3>
+                <p class="voice-note">一次錄完整段客戶資料，系統會自動拆分並填入下方表單。</p>
+              </div>
+            </div>
+            <textarea id="voiceTranscript" placeholder="例如：客戶名稱 Belinda Mok，39歲，女性，已婚，1位受扶養人，職業產品經理，每月收入82000，每月支出36000，每月保險預算4500，目前每月保費1400，已有醫療及意外保障，未有重大疾病及壽險保障。"></textarea>
+            <div class="voice-capture-actions">
+              <button class="voice-btn" id="voiceRecordBtn" type="button">開始錄音</button>
+              <button class="voice-btn" id="voiceParseBtn" type="button">套用到表單</button>
+            </div>
+            <p class="voice-note">建議一次說完整句子。公開 HTTPS link 的麥克風權限通常比本地 `127.0.0.1` 更穩定。</p>
+          </div>
+
           <h3>客戶資料</h3>
           <div class="grid">
-            <div><label>客戶名稱 / 編號</label><div class="voice-field"><input name="name_or_code" value="Client Workbench" required /><button class="voice-btn" type="button" data-field="name_or_code" aria-label="語音輸入客戶名稱">🎙</button></div></div>
-            <div><label>年齡</label><div class="voice-field"><input name="age" type="number" value="39" required /><button class="voice-btn" type="button" data-field="age" aria-label="語音輸入年齡">🎙</button></div></div>
-            <div><label>性別</label><div class="voice-field"><select name="gender"><option>Male</option><option selected>Female</option><option>Other</option></select><button class="voice-btn" type="button" data-field="gender" aria-label="語音輸入性別">🎙</button></div></div>
-            <div><label>婚姻狀況</label><div class="voice-field"><select name="marital_status"><option>Single</option><option selected>Married</option><option>Divorced</option><option>Widowed</option></select><button class="voice-btn" type="button" data-field="marital_status" aria-label="語音輸入婚姻狀況">🎙</button></div></div>
-            <div><label>受扶養人數</label><div class="voice-field"><input name="dependents" type="number" value="1" required /><button class="voice-btn" type="button" data-field="dependents" aria-label="語音輸入受扶養人數">🎙</button></div></div>
-            <div><label>職業</label><div class="voice-field"><input name="occupation" value="Product Manager" required /><button class="voice-btn" type="button" data-field="occupation" aria-label="語音輸入職業">🎙</button></div></div>
-            <div><label>每月收入</label><div class="voice-field"><input name="income_monthly" type="number" value="82000" required /><button class="voice-btn" type="button" data-field="income_monthly" aria-label="語音輸入每月收入">🎙</button></div></div>
-            <div><label>每月支出</label><div class="voice-field"><input name="expenses_monthly" type="number" value="36000" required /><button class="voice-btn" type="button" data-field="expenses_monthly" aria-label="語音輸入每月支出">🎙</button></div></div>
-            <div><label>每月保險預算</label><div class="voice-field"><input name="budget_monthly" type="number" value="4500" required /><button class="voice-btn" type="button" data-field="budget_monthly" aria-label="語音輸入每月保險預算">🎙</button></div></div>
-            <div><label>目前每月保費</label><div class="voice-field"><input name="current_premium" type="number" value="1400" required /><button class="voice-btn" type="button" data-field="current_premium" aria-label="語音輸入目前每月保費">🎙</button></div></div>
+            <div><label>客戶名稱 / 編號</label><input name="name_or_code" value="Client Workbench" required /></div>
+            <div><label>年齡</label><input name="age" type="number" value="39" required /></div>
+            <div><label>性別</label><select name="gender"><option>Male</option><option selected>Female</option><option>Other</option></select></div>
+            <div><label>婚姻狀況</label><select name="marital_status"><option>Single</option><option selected>Married</option><option>Divorced</option><option>Widowed</option></select></div>
+            <div><label>受扶養人數</label><input name="dependents" type="number" value="1" required /></div>
+            <div><label>職業</label><input name="occupation" value="Product Manager" required /></div>
+            <div><label>每月收入</label><input name="income_monthly" type="number" value="82000" required /></div>
+            <div><label>每月支出</label><input name="expenses_monthly" type="number" value="36000" required /></div>
+            <div><label>每月保險預算</label><input name="budget_monthly" type="number" value="4500" required /></div>
+            <div><label>目前每月保費</label><input name="current_premium" type="number" value="1400" required /></div>
           </div>
-          <p class="voice-note">點擊欄位右側麥克風即可語音填表。數字欄位會自動擷取數字；性別與婚姻狀況會自動對應選項。</p>
 
           <h3>現有保障</h3>
           <div class="checks">
@@ -1932,10 +2206,14 @@ def workbench() -> str:
     const statusBox = document.getElementById("statusBox");
     const linkBar = document.getElementById("linkBar");
     const googleAuthBar = document.getElementById("googleAuthBar");
-    const voiceButtons = Array.from(document.querySelectorAll(".voice-btn"));
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    let recognition = null;
-    let activeVoiceButton = null;
+    const voiceRecordBtn = document.getElementById("voiceRecordBtn");
+    const voiceParseBtn = document.getElementById("voiceParseBtn");
+    const voiceTranscript = document.getElementById("voiceTranscript");
+    const supportsRecording = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    let mediaRecorder = null;
+    let recordingStream = null;
+    let recordingChunks = [];
+    let recording = false;
 
     async function loadGoogleStatus() {
       googleAuthBar.innerHTML = "";
@@ -1967,94 +2245,246 @@ def workbench() -> str:
       statusBox.classList.toggle("danger", isError);
     }
 
-    function normalizeVoiceValue(fieldName, transcript) {
-      const raw = (transcript || "").trim();
-      const compact = raw.replace(/\\s+/g, "");
-      const digits = (raw.match(/\\d+/g) || []).join("");
-      if (["age", "dependents", "income_monthly", "expenses_monthly", "budget_monthly", "current_premium"].includes(fieldName)) {
-        return digits || "";
+    function extractNumber(text, patterns) {
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) return match[1].replace(/,/g, "");
       }
-      if (fieldName === "gender") {
-        if (/female|女/i.test(raw)) return "Female";
-        if (/male|男/i.test(raw)) return "Male";
-        return "Other";
-      }
-      if (fieldName === "marital_status") {
-        if (/married|已婚|結婚/i.test(raw)) return "Married";
-        if (/single|單身|未婚/i.test(raw)) return "Single";
-        if (/divorced|離婚/i.test(raw)) return "Divorced";
-        if (/widowed|喪偶/i.test(raw)) return "Widowed";
-        return "";
-      }
-      return compact || raw;
+      return "";
     }
 
-    function stopVoiceInput() {
-      if (recognition) {
-        recognition.stop();
-      }
-      if (activeVoiceButton) {
-        activeVoiceButton.classList.remove("active");
-        activeVoiceButton = null;
+    function fillCheckbox(name, value) {
+      const el = form.elements[name];
+      if (typeof value === "boolean") {
+        el.checked = value;
       }
     }
 
-    function startVoiceInput(button) {
-      if (!SpeechRecognition) {
-        setStatus("此瀏覽器不支援語音輸入。建議使用 Chrome 或 Edge。", true);
+    function applyStructuredFields(fields) {
+      if (!fields || typeof fields !== "object") return false;
+      let applied = false;
+      const scalarFields = [
+        "name_or_code",
+        "age",
+        "gender",
+        "marital_status",
+        "dependents",
+        "occupation",
+        "income_monthly",
+        "expenses_monthly",
+        "budget_monthly",
+        "current_premium"
+      ];
+      scalarFields.forEach((name) => {
+        if (fields[name] !== undefined && fields[name] !== null && fields[name] !== "") {
+          form.elements[name].value = fields[name];
+          applied = true;
+        }
+      });
+      ["existing_medical", "existing_ci", "existing_life", "existing_accident"].forEach((name) => {
+        if (typeof fields[name] === "boolean") {
+          fillCheckbox(name, fields[name]);
+          applied = true;
+        }
+      });
+      return applied;
+    }
+
+    function formatMissingFields(fields) {
+      const mapping = {
+        name_or_code: "客戶名稱 / 編號",
+        age: "年齡",
+        gender: "性別",
+        marital_status: "婚姻狀況",
+        dependents: "受扶養人數",
+        occupation: "職業",
+        income_monthly: "每月收入",
+        expenses_monthly: "每月支出",
+        budget_monthly: "每月保險預算",
+        current_premium: "目前每月保費",
+      };
+      const missing = Array.isArray(fields?.missing_fields) ? fields.missing_fields : [];
+      if (!missing.length) return "";
+      return missing.map((item) => mapping[item] || item).join("、");
+    }
+
+    function applyTranscriptToForm(transcript) {
+      const text = (transcript || "").trim();
+      if (!text) {
+        setStatus("請先錄音或貼上完整口述內容。", true);
         return;
       }
 
-      if (!recognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = "zh-HK";
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+      const setValue = (name, value) => {
+        if (value === undefined || value === null || value === "") return;
+        form.elements[name].value = value;
+      };
 
-        recognition.onresult = (event) => {
-          if (!activeVoiceButton) return;
-          const fieldName = activeVoiceButton.dataset.field;
-          const target = form.elements[fieldName];
-          const transcript = event.results[0][0].transcript;
-          const value = normalizeVoiceValue(fieldName, transcript);
-          if (!value) {
-            setStatus(`未能辨識 ${fieldName} 的有效內容，請再試一次。`, true);
-            return;
-          }
-          target.value = value;
-          target.dispatchEvent(new Event("change", { bubbles: true }));
-          setStatus(`已完成語音填寫：${transcript}`);
-        };
+      const nameMatch = text.match(/(?:客戶名稱|客戶姓名|名字|姓名|name)\\s*[:：]?\\s*([A-Za-z\\u4e00-\\u9fff. ]{2,40})/i);
+      if (nameMatch) setValue("name_or_code", nameMatch[1].trim());
 
-        recognition.onerror = (event) => {
-          const message = event.error === "not-allowed"
-            ? "瀏覽器尚未取得麥克風權限。"
-            : `語音輸入失敗：${event.error}`;
-          setStatus(message, true);
-          stopVoiceInput();
-        };
+      const age = extractNumber(text, [
+        /(?:年齡|歲數|今年)\\s*[:：]?\\s*(\\d{1,3})/i,
+        /(\\d{1,3})\\s*歲/i,
+      ]);
+      if (age) setValue("age", age);
 
-        recognition.onend = () => {
-          if (activeVoiceButton) {
-            activeVoiceButton.classList.remove("active");
-            activeVoiceButton = null;
-          }
-        };
+      if (/female|女性|女人|女\b/i.test(text)) setValue("gender", "Female");
+      else if (/male|男性|男人|男\b/i.test(text)) setValue("gender", "Male");
+      else if (/other|其他/i.test(text)) setValue("gender", "Other");
+
+      if (/已婚|結婚|married/i.test(text)) setValue("marital_status", "Married");
+      else if (/單身|未婚|single/i.test(text)) setValue("marital_status", "Single");
+      else if (/離婚|divorced/i.test(text)) setValue("marital_status", "Divorced");
+      else if (/喪偶|widowed/i.test(text)) setValue("marital_status", "Widowed");
+
+      const dependents = extractNumber(text, [
+        /(?:受扶養人數|扶養人數|家屬人數|dependents?)\\s*[:：]?\\s*(\\d{1,2})/i,
+        /(\\d{1,2})\\s*(?:位|名|個)?\\s*(?:受扶養人|家屬|小孩|孩子)/i,
+      ]);
+      if (dependents) setValue("dependents", dependents);
+
+      const occupationMatch = text.match(/(?:職業|工作|occupation)\\s*[:：]?\\s*([A-Za-z\\u4e00-\\u9fff ]{2,40})/i);
+      if (occupationMatch) setValue("occupation", occupationMatch[1].trim());
+
+      const income = extractNumber(text, [
+        /(?:每月收入|月收入|收入|薪金|薪水)\\s*[:：]?\\s*(\\d[\\d,]*)/i,
+      ]);
+      if (income) setValue("income_monthly", income);
+
+      const expenses = extractNumber(text, [
+        /(?:每月支出|月支出|支出|開支)\\s*[:：]?\\s*(\\d[\\d,]*)/i,
+      ]);
+      if (expenses) setValue("expenses_monthly", expenses);
+
+      const budget = extractNumber(text, [
+        /(?:每月保險預算|保險預算|預算)\\s*[:：]?\\s*(\\d[\\d,]*)/i,
+      ]);
+      if (budget) setValue("budget_monthly", budget);
+
+      const premium = extractNumber(text, [
+        /(?:目前每月保費|現時每月保費|目前保費|每月保費|保費)\\s*[:：]?\\s*(\\d[\\d,]*)/i,
+      ]);
+      if (premium) setValue("current_premium", premium);
+
+      if (/已有醫療|有醫療|已有住院|有住院/i.test(text)) fillCheckbox("existing_medical", true);
+      if (/未有醫療|沒有醫療|冇醫療/i.test(text)) fillCheckbox("existing_medical", false);
+      if (/已有重大疾病|有重大疾病|有危疾|已有危疾/i.test(text)) fillCheckbox("existing_ci", true);
+      if (/未有重大疾病|沒有重大疾病|冇重大疾病|未有危疾|沒有危疾|冇危疾/i.test(text)) fillCheckbox("existing_ci", false);
+      if (/已有壽險|有壽險|有人壽/i.test(text)) fillCheckbox("existing_life", true);
+      if (/未有壽險|沒有壽險|冇壽險|未有人壽|沒有人壽/i.test(text)) fillCheckbox("existing_life", false);
+      if (/已有意外|有意外保障|已有意外保障/i.test(text)) fillCheckbox("existing_accident", true);
+      if (/未有意外|沒有意外|冇意外保障/i.test(text)) fillCheckbox("existing_accident", false);
+
+      setStatus("語音內容已自動拆分並填入表單。你可以先檢查，再提交生成。");
+    }
+
+    function resetVoiceButton() {
+      recording = false;
+      voiceRecordBtn.classList.remove("active");
+      voiceRecordBtn.textContent = "開始錄音";
+    }
+
+    async function transcribeRecordedAudio(blob) {
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+      const base64Audio = btoa(binary);
+
+      const response = await fetch("/api/workbench/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audio_base64: base64Audio,
+          content_type: blob.type || "audio/webm",
+          filename: blob.type.includes("mp4") || blob.type.includes("m4a") ? "voice-input.m4a" : "voice-input.webm"
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "語音轉寫失敗");
       }
+      return data;
+    }
 
-      if (activeVoiceButton === button) {
-        stopVoiceInput();
+    async function stopVoiceInput() {
+      if (!mediaRecorder || !recording) {
+        resetVoiceButton();
+        return;
+      }
+      mediaRecorder.stop();
+      resetVoiceButton();
+    }
+
+    async function startVoiceInput() {
+      if (!supportsRecording) {
+        setStatus("此瀏覽器不支援錄音上傳。建議使用最新 Chrome 或 Edge。", true);
         return;
       }
 
-      if (activeVoiceButton) {
-        activeVoiceButton.classList.remove("active");
+      if (recording) {
+        await stopVoiceInput();
+        return;
       }
 
-      activeVoiceButton = button;
-      button.classList.add("active");
-      setStatus("正在收音，請直接說出該欄位內容。");
-      recognition.start();
+      try {
+        recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : (MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "");
+        mediaRecorder = mimeType ? new MediaRecorder(recordingStream, { mimeType }) : new MediaRecorder(recordingStream);
+        recordingChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            recordingChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onerror = () => {
+          setStatus("錄音失敗，請再試一次。", true);
+          if (recordingStream) {
+            recordingStream.getTracks().forEach((track) => track.stop());
+            recordingStream = null;
+          }
+          resetVoiceButton();
+        };
+
+        mediaRecorder.onstop = async () => {
+          try {
+            if (recordingStream) {
+              recordingStream.getTracks().forEach((track) => track.stop());
+              recordingStream = null;
+            }
+            const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+            setStatus("錄音完成，系統正在轉寫...");
+            const result = await transcribeRecordedAudio(blob);
+            const transcript = result.transcript || "";
+            voiceTranscript.value = transcript;
+            const applied = applyStructuredFields(result.fields);
+            const missingText = formatMissingFields(result.fields);
+            if (applied) {
+              setStatus(missingText
+                ? `語音轉寫完成，系統已自動填入欄位。仍缺：${missingText}`
+                : "語音轉寫完成，系統已自動填入欄位。你可以檢查後直接提交。");
+            } else {
+              applyTranscriptToForm(transcript);
+            }
+          } catch (error) {
+            setStatus(error.message || "語音轉寫失敗", true);
+          }
+        };
+
+        recording = true;
+        voiceRecordBtn.classList.add("active");
+        voiceRecordBtn.textContent = "停止錄音";
+        setStatus("正在錄音，請直接完整說出客戶資料。");
+        mediaRecorder.start();
+      } catch (error) {
+        setStatus("無法取得麥克風權限或瀏覽器不支援錄音。", true);
+        resetVoiceButton();
+      }
     }
 
     function setList(id, items, formatter) {
@@ -2068,13 +2498,12 @@ def workbench() -> str:
       });
     }
 
-    voiceButtons.forEach((button) => {
-      button.addEventListener("click", () => startVoiceInput(button));
-      if (!SpeechRecognition) {
-        button.disabled = true;
-        button.title = "目前瀏覽器不支援語音輸入";
-      }
-    });
+    voiceRecordBtn.addEventListener("click", () => startVoiceInput());
+    voiceParseBtn.addEventListener("click", () => applyTranscriptToForm(voiceTranscript.value));
+    if (!supportsRecording) {
+      voiceRecordBtn.disabled = true;
+      voiceRecordBtn.title = "目前瀏覽器不支援錄音上傳";
+    }
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -2235,3 +2664,35 @@ def workbench_generate(req: IntakeRequest) -> JSONResponse:
 
     status_code, body = _run_local_workbench(req)
     return JSONResponse(status_code=status_code, content=body)
+
+
+@router.post("/workbench/transcribe")
+def workbench_transcribe(payload: dict = Body(...)) -> JSONResponse:
+    audio_b64 = payload.get("audio_base64")
+    content_type = payload.get("content_type", "audio/webm")
+    filename = payload.get("filename", "voice-input.webm")
+    if not audio_b64:
+        raise HTTPException(status_code=400, detail="audio_base64 is required")
+
+    suffix = ".webm"
+    if "mp4" in content_type or filename.endswith(".m4a"):
+        suffix = ".m4a"
+    elif filename.endswith(".wav") or "wav" in content_type:
+        suffix = ".wav"
+
+    try:
+        audio_bytes = base64.b64decode(audio_b64)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid base64 audio payload") from exc
+
+    service = get_service()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+        tmp.write(audio_bytes)
+        tmp.flush()
+        transcript = service.llm.transcribe_audio(tmp.name)
+
+    if transcript.startswith("[LLM_FALLBACK:audio_error="):
+        raise HTTPException(status_code=502, detail=transcript)
+
+    fields = _extract_voice_fields(transcript)
+    return JSONResponse({"transcript": transcript, "fields": fields})
