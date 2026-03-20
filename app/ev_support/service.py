@@ -329,13 +329,14 @@ class EVSupportService:
         return None
 
     def parse_support_group_reply_command(self, text: str) -> tuple[str, str] | None:
-        match = re.match(r"\s*reply\s+(line:[A-Za-z0-9]+)\s+(.+)\s*$", text, re.IGNORECASE | re.DOTALL)
+        match = re.match(r"\s*reply\s+((?:line:)?[A-Za-z0-9]+)\s+(.+)\s*$", text, re.IGNORECASE | re.DOTALL)
         if not match:
             return None
-        session_id = match.group(1)
+        session_token = match.group(1)
         reply_text = match.group(2).strip()
         if not reply_text:
             return None
+        session_id = session_token if session_token.lower().startswith("line:") else f"line:{session_token}"
         return session_id, reply_text
 
     def is_customer_handoff_close_request(self, text: str) -> bool:
@@ -345,9 +346,11 @@ class EVSupportService:
     def support_group_reply_help_text(self) -> str:
         return (
             "To reply to a customer from this support group, send:\n"
+            "reply <user_id> <message>\n"
+            "or\n"
             "reply line:<session_id> <message>\n\n"
             "Example:\n"
-            "reply line:U1234567890 We are checking your case and will update you shortly."
+            "reply U1234567890 We are checking your case and will update you shortly."
         )
 
     def support_group_alert_text(

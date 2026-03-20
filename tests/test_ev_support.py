@@ -632,7 +632,7 @@ def test_support_group_can_reply_to_customer_session() -> None:
                     "replyToken": "reply-token",
                     "timestamp": 1710000012000,
                     "source": {"type": "group", "groupId": "Csupportgroup"},
-                    "message": {"id": "mid-11", "type": "text", "text": "reply line:Ureply We are checking your case now."},
+                    "message": {"id": "mid-11", "type": "text", "text": "reply Ureply We are checking your case now."},
                 }
             ],
         },
@@ -664,7 +664,7 @@ def test_support_group_reply_requires_existing_session() -> None:
                     "replyToken": "reply-token",
                     "timestamp": 1710000013000,
                     "source": {"type": "group", "groupId": "Csupportgroup"},
-                    "message": {"id": "mid-12", "type": "text", "text": "reply line:Umissing Please contact us later."},
+                    "message": {"id": "mid-12", "type": "text", "text": "reply Umissing Please contact us later."},
                 }
             ],
         },
@@ -674,3 +674,11 @@ def test_support_group_reply_requires_existing_session() -> None:
     payload = response.json()
     assert payload["results"][0]["status"] == "support_group_reply_not_found"
     assert payload["results"][0]["session_id"] == "line:Umissing"
+
+
+def test_support_group_reply_help_text_mentions_short_syntax() -> None:
+    service = routes.get_ev_support_service()
+    help_text = service.support_group_reply_help_text()
+
+    assert "reply <user_id> <message>" in help_text
+    assert "reply U1234567890" in help_text
