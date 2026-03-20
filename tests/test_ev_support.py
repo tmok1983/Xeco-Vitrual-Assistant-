@@ -682,3 +682,18 @@ def test_support_group_reply_help_text_mentions_short_syntax() -> None:
 
     assert "reply <user_id> <message>" in help_text
     assert "reply U1234567890" in help_text
+
+
+def test_support_group_alert_includes_copy_friendly_commands() -> None:
+    service = routes.get_ev_support_service()
+    alert = service.support_group_alert_text(
+        session_id="line:Ualert",
+        user_id="Ualert",
+        language="zh-HK",
+        customer_text="想同客服溝通",
+        reason="customer_requested_human",
+    )
+
+    assert "User ID: Ualert" in alert
+    assert "reply Ualert <your message>" in alert
+    assert "resume bot line:Ualert" in alert

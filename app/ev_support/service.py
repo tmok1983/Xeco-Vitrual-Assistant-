@@ -371,6 +371,12 @@ class EVSupportService:
             "",
             f"Session ID: {session_id}",
             f"User ID: {user_id}",
+            "",
+            "Quick reply command:",
+            f"reply {user_id} <your message>",
+            "",
+            "Quick resume command:",
+            f"resume bot {session_id}",
         ]
         if media_summary:
             parts.extend(["", f"Media summary: {media_summary[:500]}"])
