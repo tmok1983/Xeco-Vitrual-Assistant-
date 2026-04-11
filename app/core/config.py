@@ -24,6 +24,8 @@ class AppConfig:
     database_url: str | None = None
     llm_provider: str = "mock"
     openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_agent_model: str | None = None
     openai_model: str = "gpt-4.1-mini"
     openai_transcribe_model: str = "whisper-1"
     gemini_api_key: str | None = None
@@ -66,6 +68,8 @@ class AppConfig:
             database_url=os.getenv("DATABASE_URL"),
             llm_provider=os.getenv("LLM_PROVIDER", "mock").lower(),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
+            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            openai_agent_model=os.getenv("OPENAI_AGENT_MODEL"),
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
             openai_transcribe_model=os.getenv("OPENAI_TRANSCRIBE_MODEL", "whisper-1"),
             gemini_api_key=os.getenv("GEMINI_API_KEY"),

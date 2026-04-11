@@ -16,8 +16,12 @@ services:
         value: openai
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_BASE_URL
+        value: https://ubuntu-s-1vcpu-1gb-sfo3-01.tail189497.ts.net/v1
+      - key: OPENAI_AGENT_MODEL
+        value: openclaw/consulting
       - key: OPENAI_MODEL
-        value: gpt-4.1-mini
+        value: moonshot/kimi-k2.5
       - key: LINE_CHANNEL_SECRET
         sync: false
       - key: LINE_CHANNEL_ACCESS_TOKEN

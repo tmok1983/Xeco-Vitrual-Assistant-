@@ -22,7 +22,13 @@ def build_repository(cfg: AppConfig):
 
 def build_llm_client(cfg: AppConfig) -> LLMClient:
     if cfg.llm_provider == "openai" and cfg.openai_api_key:
-        return OpenAIClient(api_key=cfg.openai_api_key, model=cfg.openai_model, transcribe_model=cfg.openai_transcribe_model)
+        return OpenAIClient(
+            api_key=cfg.openai_api_key,
+            base_url=cfg.openai_base_url,
+            agent_model=cfg.openai_agent_model,
+            model=cfg.openai_model,
+            transcribe_model=cfg.openai_transcribe_model,
+        )
     if cfg.llm_provider == "gemini" and cfg.gemini_api_key:
         return GeminiClient(api_key=cfg.gemini_api_key, model=cfg.gemini_model)
     return MockLLMClient()

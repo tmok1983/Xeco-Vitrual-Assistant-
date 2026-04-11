@@ -33,23 +33,37 @@ class MockLLMClient:
 @dataclass
 class OpenAIClient:
     api_key: str
+    base_url: str
+    agent_model: str | None
     model: str
     transcribe_model: str = "gpt-4o-mini-transcribe"
+
+    def _endpoint(self, path: str) -> str:
+        return f"{self.base_url.rstrip('/')}/{path.lstrip('/')}"
+
+    def _headers(self) -> dict[str, str]:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        if self.agent_model:
+            headers["x-openclaw-model"] = self.model
+        return headers
+
+    def _text_model(self) -> str:
+        return self.agent_model or self.model
 
     def complete(self, prompt: str) -> str:
         try:
             ssl_ctx = ssl.create_default_context(cafile=certifi.where())
             body = {
-                "model": self.model,
+                "model": self._text_model(),
                 "input": prompt,
             }
             req = request.Request(
-                url="https://api.openai.com/v1/responses",
+                url=self._endpoint("responses"),
                 method="POST",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=self._headers(),
                 data=json.dumps(body).encode("utf-8"),
             )
             with request.urlopen(req, timeout=30, context=ssl_ctx) as resp:  # nosec B310
@@ -70,7 +84,7 @@ class OpenAIClient:
             data_url = f"data:image/jpeg;base64,{b64encode(image_bytes).decode('utf-8')}"
             ssl_ctx = ssl.create_default_context(cafile=certifi.where())
             body = {
-                "model": self.model,
+                "model": self._text_model(),
                 "input": [
                     {
                         "role": "user",
@@ -82,12 +96,9 @@ class OpenAIClient:
                 ],
             }
             req = request.Request(
-                url="https://api.openai.com/v1/responses",
+                url=self._endpoint("responses"),
                 method="POST",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=self._headers(),
                 data=json.dumps(body).encode("utf-8"),
             )
             with request.urlopen(req, timeout=60, context=ssl_ctx) as resp:  # nosec B310
@@ -106,7 +117,7 @@ class OpenAIClient:
             with httpx.Client(timeout=120.0, verify=certifi.where()) as client:
                 with open(audio_path, "rb") as handle:
                     response = client.post(
-                        "https://api.openai.com/v1/audio/transcriptions",
+                        self._endpoint("audio/transcriptions"),
                         headers={"Authorization": f"Bearer {self.api_key}"},
                         data={"model": self.transcribe_model},
                         files={"file": (Path(audio_path).name, handle, "application/octet-stream")},
